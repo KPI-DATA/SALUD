@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaludRD Pro | Monitor de Salud IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .avatar-circle { transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #chatMessages::-webkit-scrollbar { width: 6px; }
+        #chatMessages::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+        .pdf-preview-canvas { border: 1px solid #e2e8f0; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .bell-ring { animation: bellRing 1s ease-in-out infinite; }
+        @keyframes bellRing { 0%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(-10deg); } 20%, 40% { transform: rotate(10deg); } }
+        .excel-preview-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+        .excel-preview-table th { background-color: #217346; color: white; padding: 8px; border: 1px solid #1e6b40; }
+        .excel-preview-table td { padding: 6px; border: 1px solid #d4d4d4; }
+        .excel-preview-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .excel-preview-table tr:hover { background-color: #e8f5e9; }
+        .chat-option-btn { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; padding: 6px 12px; border-radius: 15px; font-size: 0.85rem; cursor: pointer; margin: 4px; transition: all 0.2s; }
+        .chat-option-btn:hover { background-color: #10b981; color: white; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+    <!-- AUTENTICACIÓN -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 to-teal-100">
+        <div class="glass-panel p-8 rounded-3xl shadow-2xl w-full max-w-md fade-in">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-3xl mb-4">🍏</div>
+                <h1 class="text-3xl font-bold text-slate-900">SaludRD Pro</h1>
+                <p class="text-slate-500 mt-2">Tu agente de bienestar con IA</p>
+            </div>
+            <div id="loginForm">
+                <div class="space-y-4">
+                    <input type="email" id="loginEmail" placeholder="Correo electrónico" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                    <input type="password" id="loginPassword" placeholder="Contraseña" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                    <button onclick="appLogin()" id="btnLogin" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-semibold">Iniciar Sesión</button>
+                </div>
+                <p class="text-center mt-6 text-sm">¿No tienes cuenta? <a href="#" onclick="toggleAuth()" class="text-emerald-600 font-semibold">Regístrate</a></p>
+            </div>
+            <div id="registerForm" class="hidden">
+                <div class="space-y-3">
+                    <input type="text" id="regName" placeholder="Nombre completo" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="regAge" placeholder="Edad" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                        <select id="regGender" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="number" id="regWeight" placeholder="Peso (lbs)" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                        <input type="number" id="regHeightFeet" placeholder="Pies" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                        <input type="number" id="regHeightInches" placeholder="Pulg." class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                    </div>
+                    <select id="regActivity" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                        <option value="sedentario">Sedentario (Poco o ningún ejercicio)</option>
+                        <option value="moderado" selected>Moderado (Ejercicio 1-3 días/sem)</option>
+                        <option value="activo">Activo (Ejercicio 4-5 días/sem)</option>
+                    </select>
+                    <input type="email" id="regEmail" placeholder="Correo electrónico" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                    <input type="password" id="regPassword" placeholder="Contraseña (mín. 6)" class="w-full p-3.5 bg-white border border-slate-200 rounded-xl">
+                    <button onclick="appRegister()" id="btnRegister" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-semibold">Crear Cuenta</button>
+                </div>
+                <p class="text-center mt-6 text-sm">¿Ya tienes cuenta? <a href="#" onclick="toggleAuth()" class="text-emerald-600 font-semibold">Inicia Sesión</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE ESPERA -->
+    <div id="pendingScreen" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 to-orange-100">
+        <div class="glass-panel p-8 rounded-3xl shadow-2xl w-full max-w-md text-center fade-in">
+            <div class="text-6xl mb-4">⏳</div>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">Cuenta Pendiente de Aprobación</h2>
+            <p class="text-slate-600 mb-6">Tu registro ha sido recibido. Un administrador debe aprobar tu cuenta.</p>
+            <button onclick="appLogout()" class="w-full bg-slate-200 text-slate-700 p-3 rounded-xl font-semibold hover:bg-slate-300 transition">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="mainApp" class="hidden min-h-screen pb-24 bg-slate-50">
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-xl">🍏</div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Hola, <span id="userNameDisplay">Usuario</span></h2>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openStatsModal()" class="bg-blue-100 text-blue-700 text-sm px-4 py-2 rounded-lg font-semibold hover:bg-blue-200 transition flex items-center gap-1">📊 Estadísticas</button>
+                    <button onclick="openPatientProfileModal()" class="bg-indigo-100 text-indigo-700 text-sm px-4 py-2 rounded-lg font-semibold hover:bg-indigo-200 transition">✏️ Editar Perfil</button>
+                    <button onclick="appLogout()" class="bg-slate-100 text-slate-600 text-sm px-4 py-2 rounded-lg font-semibold hover:bg-slate-200 transition">Salir</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-6xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 text-center">
+                    <h3 class="font-semibold text-slate-700 mb-4">Tu Progreso Visual</h3>
+                    <div class="flex justify-center items-center h-40 mb-4">
+                        <div id="avatarContainer" class="avatar-circle w-32 h-32 rounded-full flex items-center justify-center text-6xl shadow-inner bg-emerald-50 border-4 border-emerald-100">👨</div>
+                    </div>
+                    <p id="avatarMessage" class="text-sm text-slate-600 italic mb-4">"Cada paso cuenta."</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <div class="text-xs text-slate-500 uppercase font-bold">Peso</div>
+                            <div class="text-xl font-bold text-slate-800"><span id="currentWeight">--</span> <span class="text-sm font-normal text-slate-500">lbs</span></div>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <div class="text-xs text-slate-500 uppercase font-bold">IMC</div>
+                            <div class="text-xl font-bold text-slate-800" id="currentBMI">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="healthPlanCard" class="bg-indigo-50 p-6 rounded-2xl shadow-sm border border-indigo-100 hidden">
+                    <h3 class="font-semibold text-indigo-800 mb-3 flex items-center gap-2">🩺 Mi Perfil de Salud</h3>
+                    <div class="mb-3">
+                        <span class="text-xs font-bold text-indigo-600 uppercase">Condición / Alergias:</span>
+                        <p id="userHealthCondition" class="text-sm text-slate-800 font-medium mt-1">No registrada</p>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-indigo-600 uppercase">Notas para la IA / Tratamiento:</span>
+                        <p id="userTreatmentPlan" class="text-sm text-slate-700 mt-1 bg-white p-3 rounded-lg border border-indigo-200 italic">Sin notas adicionales.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-semibold text-slate-700 mb-4">Resumen de Hoy</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-xl border border-blue-100">
+                            <span class="text-sm font-medium">💧 Agua</span>
+                            <span class="font-bold text-blue-700"><span id="waterCount">0</span>/8</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-purple-50 rounded-xl border border-purple-100">
+                            <span class="text-sm font-medium">😴 Sueño</span>
+                            <span id="sleepStatus" class="font-bold text-sm text-slate-600">--</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-orange-50 rounded-xl border border-orange-100">
+                            <span class="text-sm font-medium">🔥 Calorías</span>
+                            <span class="font-bold text-orange-700"><span id="calorieCount">0</span> kcal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-semibold text-slate-700 mb-4">⚡ Registro Rápido</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <button onclick="addWater()" id="btnWater" class="p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 font-semibold hover:bg-blue-100 transition flex flex-col items-center gap-1">
+                            <span class="text-2xl">💧</span> +1 Vaso
+                        </button>
+                        <button onclick="logSexActivity()" id="btnSex" class="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 font-semibold hover:bg-rose-100 transition flex flex-col items-center gap-1">
+                            <span class="text-2xl">❤️</span> Actividad Sexual
+                        </button>
+                        <div class="col-span-2 relative">
+                            <input type="number" id="inputSleepHours" placeholder="Horas de sueño (ej: 7.5)" class="w-full h-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                            <button onclick="logSleep()" id="btnSleep" class="absolute right-1 top-1 bottom-1 bg-purple-600 text-white px-4 rounded-lg font-semibold text-sm">Registrar</button>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-100 pt-6">
+                        <h4 class="font-semibold text-slate-700 mb-3">🍽️ Registrar Alimento (RD)</h4>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <button onclick="quickAddFood('empanada')" class="px-3 py-1.5 bg-slate-100 hover:bg-emerald-100 rounded-full text-sm border border-slate-200">🥟 Empanada</button>
+                            <button onclick="quickAddFood('mangu')" class="px-3 py-1.5 bg-slate-100 hover:bg-emerald-100 rounded-full text-sm border border-slate-200">🍌 Mangú</button>
+                            <button onclick="quickAddFood('moro')" class="px-3 py-1.5 bg-slate-100 hover:bg-emerald-100 rounded-full text-sm border border-slate-200">🍚 Moro</button>
+                            <button onclick="quickAddFood('sancocho')" class="px-3 py-1.5 bg-slate-100 hover:bg-emerald-100 rounded-full text-sm border border-slate-200">🍲 Sancocho</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="foodInput" class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl" placeholder="Escribe otro alimento...">
+                            <button onclick="logFood()" id="btnFood" class="bg-emerald-600 text-white px-6 rounded-xl font-semibold">Añadir</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-semibold text-slate-700 mb-4">📋 Historial de Hoy</h3>
+                    <div id="dailyLogList" class="space-y-2 max-h-96 overflow-y-auto">
+                        <p class="text-slate-400 text-sm text-center py-4">Aún no has registrado alimentos hoy.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL DE ADMINISTRADOR -->
+    <div id="adminPanel" class="hidden min-h-screen bg-slate-100 p-4 md:p-8">
+        <div class="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">🛡️ Panel de Monitoreo</h2>
+                <div class="flex gap-2 items-center">
+                    <button onclick="openPendingApprovalsModal()" id="approvalBellBtn" class="relative p-2 rounded-lg hover:bg-slate-200 transition" title="Nuevos registros por aprobar">
+                        <span class="text-2xl" id="approvalBellIcon">🔔</span>
+                        <span id="approvalBellBadge" class="hidden absolute -top-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    </button>
+                    <button onclick="openOrphanedUsersModal()" id="bellBtn" class="relative p-2 rounded-lg hover:bg-slate-200 transition" title="Usuarios pendientes">
+                        <span class="text-2xl" id="bellIcon">🔕</span>
+                        <span id="bellBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    </button>
+                    <button onclick="appLogout()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-semibold hover:bg-slate-300 transition">Cerrar Sesión</button>
+                </div>
+            </div>
+            
+            <div class="mb-8 p-6 bg-purple-50 rounded-xl border border-purple-100">
+                <h3 class="text-lg font-bold text-purple-800 mb-2 flex items-center gap-2">🧠 Entrenar IA (Preguntas Pendientes)</h3>
+                <p class="text-sm text-purple-700 mb-4">Aquí aparecen las preguntas que los usuarios hicieron y la IA no supo responder. Escribe la respuesta correcta para que la IA la "aprenda".</p>
+                <div id="pendingQuestionsList" class="space-y-3 max-h-96 overflow-y-auto">
+                    <p class="text-center text-slate-500 py-4">Cargando preguntas pendientes...</p>
+                </div>
+            </div>
+
+            <div class="mb-8 p-6 bg-indigo-50 rounded-xl border border-indigo-100">
+                <h3 class="text-lg font-bold text-indigo-800 mb-2 flex items-center gap-2">📚 Alimentar la IA con Datos Nutricionales</h3>
+                <div class="flex gap-2 mb-4">
+                    <button onclick="setImportMode('pdf')" id="btnModePdf" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold text-sm">📄 PDF</button>
+                    <button onclick="setImportMode('excel')" id="btnModeExcel" class="px-4 py-2 bg-white text-indigo-600 border border-indigo-300 rounded-lg font-semibold text-sm hover:bg-indigo-100 transition">📊 Excel</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <input type="text" id="kbTitle" placeholder="Título" class="p-3 rounded-lg border border-slate-200">
+                    <input type="text" id="kbTags" placeholder="Etiquetas" class="p-3 rounded-lg border border-slate-200">
+                </div>
+                <input type="file" id="pdfFile" accept="application/pdf" class="hidden" onchange="handlePdfUpload(event)">
+                <label for="pdfFile" id="pdfLabel" class="cursor-pointer block w-full p-4 border-2 border-dashed border-indigo-300 rounded-lg text-center text-indigo-700 mb-4 hover:bg-indigo-50 transition">📄 Seleccionar archivo PDF</label>
+                <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelUpload(event)">
+                <label for="excelFile" id="excelLabel" class="hidden cursor-pointer block w-full p-4 border-2 border-dashed border-emerald-300 rounded-lg text-center text-emerald-700 mb-4 hover:bg-emerald-50 transition">📊 Seleccionar archivo Excel</label>
+                <button onclick="saveKnowledgeBase()" id="btnSaveKB" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">💾 Guardar en Memoria IA</button>
+            </div>
+
+            <h3 class="text-lg font-bold text-slate-800 mb-4">👥 Pacientes Registrados y Progreso</h3>
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-4">Paciente</th>
+                            <th class="p-4">Condición de Salud</th>
+                            <th class="p-4">Progreso Hoy</th>
+                            <th class="p-4 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminUserTable" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ESTADÍSTICAS CON FILTROS -->
+    <div id="statsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto fade-in">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-2xl sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-blue-800 flex items-center gap-2">📊 Análisis Estadístico de Salud</h3>
+                <button onclick="closeStatsModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="flex gap-2 justify-center">
+                    <button onclick="changeStatsPeriod('day')" id="btnPeriodDay" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm">Hoy</button>
+                    <button onclick="changeStatsPeriod('week')" id="btnPeriodWeek" class="px-4 py-2 bg-white text-blue-600 border border-blue-300 rounded-lg font-semibold text-sm">Esta Semana</button>
+                    <button onclick="changeStatsPeriod('month')" id="btnPeriodMonth" class="px-4 py-2 bg-white text-blue-600 border border-blue-300 rounded-lg font-semibold text-sm">Este Mes</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-center">
+                        <div class="text-sm text-emerald-600 font-semibold uppercase">Peso Actual</div>
+                        <div class="text-3xl font-bold text-emerald-800 mt-1"><span id="statWeight">--</span> <span class="text-lg">lbs</span></div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-xl border border-orange-100 text-center">
+                        <div class="text-sm text-orange-600 font-semibold uppercase">Calorías <span id="statPeriodLabel">Hoy</span></div>
+                        <div class="text-3xl font-bold text-orange-800 mt-1"><span id="statCalories">--</span> <span class="text-lg">kcal</span></div>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
+                        <div class="text-sm text-blue-600 font-semibold uppercase">IMC Actual</div>
+                        <div class="text-3xl font-bold text-blue-800 mt-1" id="statBMI">--</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="font-semibold text-slate-700 mb-4 text-center">🍩 Distribución de Macronutrientes</h4>
+                        <div class="relative h-64"><canvas id="macrosChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="font-semibold text-slate-700 mb-4 text-center">📊 Progreso de Calorías</h4>
+                        <div class="relative h-64"><canvas id="caloriesChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE APROBACIÓN DE USUARIOS -->
+    <div id="pendingApprovalsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto fade-in">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-2xl sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-blue-800 flex items-center gap-2">🔔 Nuevos Registros Pendientes</h3>
+                <button onclick="closePendingApprovalsModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="pendingUsersList" class="space-y-3"><p class="text-center text-slate-400 py-8">Cargando...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE USUARIOS HUÉRFANOS -->
+    <div id="orphanedModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto fade-in">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-amber-50 rounded-t-2xl sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-amber-800 flex items-center gap-2">🔕 Usuarios Huérfanos</h3>
+                <button onclick="closeOrphanedModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="orphanedUsersList" class="space-y-3"><p class="text-center text-slate-400 py-8">Cargando...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE VISTA PREVIA PDF -->
+    <div id="pdfPreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto fade-in">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-indigo-50 rounded-t-2xl sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-indigo-800">👁️ Vista Previa del PDF</h3>
+                <button onclick="closePdfPreview()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="pdfPagesContainer" class="mb-6 bg-slate-100 p-4 rounded-lg"></div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">📝 Texto extraído:</label>
+                <textarea id="kbContentPdf" class="w-full p-3 rounded-lg border border-slate-300 h-64 font-mono text-xs focus:ring-2 focus:ring-indigo-500"></textarea>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closePdfPreview()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-300 transition">❌ Cancelar</button>
+                    <button onclick="confirmPdfExtraction()" class="flex-1 bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition">✅ Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE VISTA PREVIA EXCEL -->
+    <div id="excelPreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto fade-in">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-emerald-50 rounded-t-2xl sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-emerald-800">📊 Vista Previa del Excel</h3>
+                <button onclick="closeExcelPreview()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="sheetSelector" class="mb-4 hidden">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Selecciona la hoja:</label>
+                    <select id="sheetSelect" onchange="changeExcelSheet()" class="p-2 border border-slate-300 rounded-lg"></select>
+                </div>
+                <div class="overflow-x-auto border border-slate-200 rounded-lg mb-4">
+                    <div id="excelTableContainer" class="max-h-96 overflow-y-auto"></div>
+                </div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">📝 Texto estructurado:</label>
+                <textarea id="kbContentExcel" class="w-full p-3 rounded-lg border border-slate-300 h-48 font-mono text-xs focus:ring-2 focus:ring-emerald-500"></textarea>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closeExcelPreview()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-300 transition">❌ Cancelar</button>
+                    <button onclick="confirmExcelExtraction()" class="flex-1 bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition">✅ Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE TRATAMIENTO (ADMIN) -->
+    <div id="treatmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto fade-in">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-indigo-50 rounded-t-2xl">
+                <h3 class="text-xl font-bold text-indigo-800">🩺 Gestión: <span id="modalUserName"></span></h3>
+                <button onclick="closeTreatmentModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Condición de Salud</label>
+                        <input type="text" id="modalHealthCondition" class="w-full p-3 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Plan de Tratamiento</label>
+                        <textarea id="modalTreatmentPlan" class="w-full p-3 border border-slate-300 rounded-lg h-32"></textarea>
+                    </div>
+                    <button onclick="saveUserTreatment()" id="btnSaveTreatment" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition">💾 Guardar Plan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE PERFIL DEL PACIENTE -->
+    <div id="patientProfileModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto fade-in">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-emerald-50 rounded-t-2xl sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-emerald-800">✏️ Editar mi Perfil</h3>
+                <button onclick="closePatientProfileModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h4 class="font-semibold text-slate-700 mb-3">📏 Medidas y Datos Físicos</h4>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Edad</label>
+                            <input type="number" id="patientAge" class="w-full p-3 border border-slate-300 rounded-lg" placeholder="Ej: 30">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Género</label>
+                            <select id="patientGender" class="w-full p-3 border border-slate-300 rounded-lg bg-white">
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <input type="number" id="patientWeight" class="w-full p-3 border border-slate-300 rounded-lg" placeholder="Peso (lbs)" step="0.1">
+                        <div class="grid grid-cols-2 gap-3">
+                            <input type="number" id="patientHeightFeet" class="w-full p-3 border border-slate-300 rounded-lg" placeholder="Pies" min="3" max="8">
+                            <input type="number" id="patientHeightInches" class="w-full p-3 border border-slate-300 rounded-lg" placeholder="Pulgadas" min="0" max="11">
+                        </div>
+                        <select id="patientActivity" class="w-full p-3 border border-slate-300 rounded-lg bg-white">
+                            <option value="sedentario">Sedentario (Poco o ningún ejercicio)</option>
+                            <option value="moderado">Moderado (Ejercicio 1-3 días/sem)</option>
+                            <option value="activo">Activo (Ejercicio 4-5 días/sem)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                    <h4 class="font-semibold text-indigo-700 mb-3">🩺 Mi Salud</h4>
+                    <input type="text" id="patientHealthCondition" class="w-full p-3 border border-slate-300 rounded-lg mb-3" placeholder="Condiciones o Alergias">
+                    <textarea id="patientTreatmentPlan" class="w-full p-3 border border-slate-300 rounded-lg h-24" placeholder="Notas para la IA"></textarea>
+                </div>
+                <button onclick="savePatientProfile()" id="btnSavePatientProfile" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-semibold hover:bg-emerald-700 transition">💾 Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAT FLOTANTE -->
+    <div id="chatWidget" class="fixed bottom-6 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 hidden flex flex-col overflow-hidden z-50 fade-in">
+        <div class="bg-emerald-600 text-white p-4 flex justify-between items-center cursor-pointer" onclick="toggleChat()">
+            <span class="font-bold">🤖 Nutriólogo IA</span><span>−</span>
+        </div>
+        <div id="chatMessages" class="h-80 overflow-y-auto p-4 bg-slate-50 space-y-3"></div>
+        <div class="p-3 border-t border-slate-200 bg-white flex gap-2">
+            <input type="text" id="chatInput" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="Pregunta algo..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()" class="bg-emerald-600 text-white p-2.5 rounded-lg">➤</button>
+        </div>
+    </div>
+    <button id="chatOpenBtn" onclick="toggleChat()" class="fixed bottom-6 right-6 bg-emerald-600 text-white p-4 rounded-full shadow-xl z-40 hidden text-2xl">💬</button>
+
+    <script>
+        var supabaseUrl = 'https://iufblwiwthvenmnrjlls.supabase.co';
+        var supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1ZmJsd2l3dGh2ZW5tbnJqbGxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2OTg2NDgsImV4cCI6MjEwOTI3NDY0OH0.qSpASNxrWz1Gm-D5pZwiZbsRuTg54ALovRzWepYJQgk';
+        var supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        var currentUser = null;
+        var userData = {};
+        var dailyLog = [];
+        var knowledgeBase = []; 
+        var learnedResponses = []; 
+        var extractedPdfText = "";
+        var extractedExcelText = "";
+        var currentExcelWorkbook = null;
+        var currentImportMode = 'pdf';
+        var currentEditingUserId = null;
+        var chartInstances = {};
+        var currentStatsPeriod = 'day';
+
+        // =========================================================================
+        // SISTEMA DE MEMORIA DE CONTEXTO AVANZADO
+        // =========================================================================
+        var chatState = {
+            active: false,
+            step: 0,
+            data: {},
+            lastIntent: "",
+            lastEntity: ""
+        };
+
+        var rdFoodDB = {
+            "empanada": { calorias: 280, carbs: 28, protein: 12, grasa: 14, fibra: 1, nota: "Empanada frita típica." },
+            "mangu": { calorias: 130, carbs: 28, protein: 2, grasa: 1, fibra: 2, nota: "Mangú de plátano." },
+            "moro": { calorias: 150, carbs: 28, protein: 6, grasa: 2, fibra: 3, nota: "Moro de guandules." },
+            "sancocho": { calorias: 110, carbs: 15, protein: 7, grasa: 3, fibra: 2, nota: "Sancocho dominicano (1 taza)." },
+            "pollo": { calorias: 165, carbs: 0, protein: 31, grasa: 3.6, fibra: 0, nota: "Pechuga de pollo (100g)." },
+            "arroz": { calorias: 130, carbs: 28, protein: 2.7, grasa: 0.3, fibra: 0.4, nota: "Arroz blanco cocido (100g)." },
+            "habichuelas": { calorias: 110, carbs: 20, protein: 8, grasa: 0.5, fibra: 6, nota: "Habichuelas rojas (100g)." },
+            "yuca": { calorias: 160, carbs: 38, protein: 1.4, grasa: 0.3, fibra: 1.8, nota: "Yuca hervida (100g)." },
+            "platano": { calorias: 89, carbs: 23, protein: 1.1, grasa: 0.3, fibra: 2.6, nota: "Plátano maduro (100g)." },
+            "ensalada": { calorias: 20, carbs: 3.5, protein: 1.5, grasa: 0.2, fibra: 1.5, nota: "Ensalada verde (100g)." },
+            "pescado": { calorias: 206, carbs: 0, protein: 22, grasa: 13, fibra: 0, nota: "Pescado a la plancha (100g)." },
+            "cerdo": { calorias: 242, carbs: 0, protein: 27, grasa: 14, fibra: 0, nota: "Cerdo magro (100g)." },
+            "huevo": { calorias: 155, carbs: 1.1, protein: 13, grasa: 11, fibra: 0, nota: "Huevo cocido (100g)." }
+        };
+
+        function getRDDate() { return new Date().toLocaleString('en-US', { timeZone: 'America/Santo_Domingo' }); }
+        function getRDDateISO() { return new Date(getRDDate()).toISOString().split('T')[0]; }
+        function getRDHour() { return new Date(getRDDate()).getHours(); }
+        function getMealType() {
+            var hour = getRDHour();
+            if (hour >= 6 && hour < 11) return 'desayuno';
+            if (hour >= 11 && hour < 15) return 'almuerzo';
+            if (hour >= 15 && hour < 22) return 'cena';
+            return 'otro';
+        }
+        function getMealLabel(mealType) {
+            var labels = { 'desayuno': '🌅 Desayuno', 'almuerzo': '☀️ Almuerzo', 'cena': '🌙 Cena', 'otro': '🍽️ Otro' };
+            return labels[mealType] || '🍽️';
+        }
+
+        async function checkAndResetDailyData() {
+            var today = getRDDateISO();
+            if (userData.last_reset_date !== today) {
+                try {
+                    await supabase.from('users').update({ water_intake: 0, calories: 0, sleep_hours: 0, sex_activity: false, last_reset_date: today }).eq('id', currentUser.id);
+                    userData.water_intake = 0; userData.calories = 0; userData.sleep_hours = 0; userData.sex_activity = false; userData.last_reset_date = today;
+                } catch (e) { console.error('Error resetting daily data:', e); }
+            }
+        }
+
+        function toggleAuth() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('registerForm').classList.toggle('hidden');
+        }
+
+        async function appRegister() {
+            var email = document.getElementById('regEmail').value.trim();
+            var password = document.getElementById('regPassword').value;
+            var name = document.getElementById('regName').value.trim();
+            var age = parseInt(document.getElementById('regAge').value) || 30;
+            var gender = document.getElementById('regGender').value;
+            var weightLbs = parseFloat(document.getElementById('regWeight').value);
+            var heightFeet = parseFloat(document.getElementById('regHeightFeet').value);
+            var heightInches = parseFloat(document.getElementById('regHeightInches').value);
+            var activity = document.getElementById('regActivity').value;
+
+            if (!email || !password || !name || !weightLbs || !heightFeet) return alert("⚠️ Completa todos los campos obligatorios.");
+            
+            setLoading('btnRegister', true);
+            try {
+                var { data: authData, error: authError } = await supabase.auth.signUp({ email: email, password: password });
+                if (authError) throw new Error("Auth: " + authError.message);
+
+                var isAdmin = email.toLowerCase() === "admin@saludrd.com";
+                await supabase.from('users').insert({
+                    id: authData.user.id, name: name, age: age, gender: gender, weight_lbs: weightLbs, height_feet: heightFeet, height_inches: heightInches || 0,
+                    activity_level: activity, email: email, water_intake: 0, calories: 0, sleep_hours: 0, health_condition: '', treatment_plan: '', 
+                    is_admin: isAdmin, approved: isAdmin, last_reset_date: getRDDateISO()
+                });
+
+                if (isAdmin) { await supabase.auth.signInWithPassword({ email: email, password: password }); } 
+                else { alert("✅ ¡Registro exitoso!\n\n⏳ Tu cuenta está pendiente de aprobación."); await supabase.auth.signOut(); window.location.reload(); }
+            } catch (error) { alert("❌ Error: " + error.message); await supabase.auth.signOut(); } 
+            finally { setLoading('btnRegister', false); }
+        }
+
+        async function appLogin() {
+            setLoading('btnLogin', true);
+            try {
+                var { error } = await supabase.auth.signInWithPassword({ email: document.getElementById('loginEmail').value.trim(), password: document.getElementById('loginPassword').value });
+                if (error) throw error;
+            } catch (error) { alert("❌ Error: " + error.message); } 
+            finally { setLoading('btnLogin', false); }
+        }
+
+        async function appLogout() { await supabase.auth.signOut(); }
+
+        async function loadKnowledgeBase() {
+            var { data: kbData } = await supabase.from('knowledge_base').select('*');
+            knowledgeBase = kbData || [];
+            var { data: learnedData } = await supabase.from('ai_learned_responses').select('*');
+            learnedResponses = learnedData || [];
+        }
+
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                currentUser = session.user;
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('pendingScreen').classList.add('hidden');
+                var { data, error } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+                if (!data) { document.getElementById('pendingScreen').classList.remove('hidden'); return; }
+                userData = data;
+                if (!userData.approved && !userData.is_admin) { document.getElementById('pendingScreen').classList.remove('hidden'); return; }
+                
+                if (userData.is_admin) {
+                    document.getElementById('adminPanel').classList.remove('hidden');
+                    showAdminPanel(); loadPendingQuestions(); loadOrphanedCount(); loadPendingApprovalsCount();
+                } else {
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    document.getElementById('chatWidget').classList.remove('hidden');
+                    await loadKnowledgeBase();
+                    await checkAndResetDailyData();
+                    await loadTodayLogs();
+                    updateUI();
+                    var greeting = `¡Hola ${userData.name}! 👋 Soy tu agente de salud.`;
+                    if (userData.treatment_plan || userData.health_condition) greeting += ` Veo que tienes un perfil de salud activo.`;
+                    addChatMessage("ia", greeting);
+                }
+            } else {
+                document.getElementById('authScreen').classList.remove('hidden');
+                ['mainApp', 'adminPanel', 'pendingScreen', 'chatWidget', 'chatOpenBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            }
+        });
+
+        async function loadTodayLogs() {
+            var { data: logs } = await supabase.from('daily_logs').select('*').eq('user_id', currentUser.id).gte('logged_at', getRDDateISO() + 'T00:00:00').order('logged_at', { ascending: false });
+            dailyLog = logs || [];
+        }
+
+        function updateUI() {
+            document.getElementById('userNameDisplay').innerText = userData.name;
+            document.getElementById('currentWeight').innerText = userData.weight_lbs;
+            document.getElementById('waterCount').innerText = userData.water_intake || 0;
+            document.getElementById('calorieCount').innerText = userData.calories || 0;
+            
+            var sleepEl = document.getElementById('sleepStatus');
+            sleepEl.innerHTML = userData.sleep_hours > 0 ? `<span class="${evaluateSleep(userData.sleep_hours).colorClass} font-bold">${evaluateSleep(userData.sleep_hours).status}</span>` : `<span class="text-slate-400">No registrado</span>`;
+
+            var planCard = document.getElementById('healthPlanCard');
+            if (userData.health_condition || userData.treatment_plan) {
+                planCard.classList.remove('hidden');
+                document.getElementById('userHealthCondition').innerText = userData.health_condition || 'Ninguna';
+                document.getElementById('userTreatmentPlan').innerText = userData.treatment_plan || 'Sin notas.';
+            } else { planCard.classList.add('hidden'); }
+
+            var totalInches = (userData.height_feet * 12) + parseInt(userData.height_inches || 0);
+            var bmi = ((userData.weight_lbs / (totalInches * totalInches)) * 703).toFixed(1);
+            document.getElementById('currentBMI').innerText = bmi;
+            
+            var baseEmoji = userData.gender === 'F' ? '👩' : '👨';
+            var scale = 1, msg = "¡Manteniendo el equilibrio!", bgColor = "bg-emerald-50", borderColor = "border-emerald-200";
+            var healthStatus = getHealthStatus(bmi, userData.age || 30, userData.activity_level || 'moderado');
+
+            if (bmi < 18.5) { scale = 0.9; msg = healthStatus; bgColor = "bg-blue-50"; borderColor = "border-blue-200"; }
+            else if (bmi < 25) { scale = 1; msg = healthStatus; bgColor = "bg-emerald-50"; borderColor = "border-emerald-200"; }
+            else if (bmi < 30) { scale = 1.15; msg = healthStatus; bgColor = "bg-amber-50"; borderColor = "border-amber-200"; }
+            else { scale = 1.3; msg = healthStatus; bgColor = "bg-rose-50"; borderColor = "border-rose-200"; }
+
+            var avatarContainer = document.getElementById('avatarContainer');
+            avatarContainer.style.transform = `scale(${scale})`;
+            avatarContainer.className = `avatar-circle w-32 h-32 rounded-full flex items-center justify-center text-6xl shadow-inner border-4 ${bgColor} ${borderColor}`;
+            avatarContainer.innerText = baseEmoji;
+            document.getElementById('avatarMessage').innerText = `"${msg}"`;
+        }
+
+        function getHealthStatus(bmi, age, activity) {
+            if (bmi < 18.5) return age > 60 ? "En adultos mayores, un peso ligeramente superior es protector." : "Tu peso está por debajo de lo ideal. Necesitamos asegurar una ingesta nutricional adecuada.";
+            if (bmi < 25) return activity === 'activo' ? "¡Excelente! Tu peso y nivel de actividad son óptimos." : "¡Peso saludable! Mantener o aumentar tu actividad física mejorará tu condición.";
+            if (bmi < 30) return activity === 'sedentario' ? "Tu peso y estilo de vida requieren atención. Pequeños cambios harán una gran diferencia." : "Con tu nivel de actividad, podemos optimizar tu peso ajustando las porciones.";
+            return "Juntos podemos mejorar tu salud. Tu nivel de actividad actual es un gran punto de partida.";
+        }
+
+        function evaluateSleep(hours) {
+            if (hours < 6) return { status: "Mala (<6h)", colorClass: "text-red-600" };
+            if (hours < 8) return { status: "Regular (6-8h)", colorClass: "text-amber-600" };
+            return { status: "Excelente (>8h)", colorClass: "text-emerald-600" };
+        }
+
+        function renderDailyLog() {
+            var list = document.getElementById('dailyLogList');
+            if (dailyLog.length === 0) { list.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Aún no has registrado alimentos hoy.</p>'; return; }
+            list.innerHTML = dailyLog.map(item => {
+                var logTime = new Date(item.logged_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santo_Domingo' });
+                return `
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-100 fade-in">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div class="font-semibold text-slate-800 capitalize">${item.food_name}</div>
+                                <div class="text-xs text-slate-500 italic">${item.notes || ''}</div>
+                                <div class="text-xs text-slate-400 mt-1">${getMealLabel(item.meal_type || 'otro')} • ${logTime}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-orange-600">${item.calories} kcal</div>
+                                <div class="text-xs text-slate-500">por 100g</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                            <div class="bg-amber-50 p-1.5 rounded border border-amber-100"><div class="text-amber-700 font-bold">${item.carbs || 0}g</div><div class="text-amber-600">Carbs</div></div>
+                            <div class="bg-red-50 p-1.5 rounded border border-red-100"><div class="text-red-700 font-bold">${item.protein || 0}g</div><div class="text-red-600">Proteína</div></div>
+                            <div class="bg-yellow-50 p-1.5 rounded border border-yellow-100"><div class="text-yellow-700 font-bold">${item.fat || 0}g</div><div class="text-yellow-600">Grasa</div></div>
+                            <div class="bg-green-50 p-1.5 rounded border border-green-100"><div class="text-green-700 font-bold">${item.fiber || 0}g</div><div class="text-green-600">Fibra</div></div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function addWater() {
+            setLoading('btnWater', true);
+            try {
+                var newWater = (userData.water_intake || 0) + 1;
+                await supabase.from('users').update({ water_intake: newWater }).eq('id', currentUser.id);
+                userData.water_intake = newWater; updateUI();
+                if (newWater >= 8) addChatMessage("ia", "¡Felicidades! 🎉 Meta de agua alcanzada.");
+            } catch(e) { alert("Error: " + e.message); } finally { setLoading('btnWater', false); }
+        }
+
+        async function logSleep() {
+            var h = parseFloat(document.getElementById('inputSleepHours').value);
+            if (!h || h <= 0) return alert("Ingresa horas válidas.");
+            setLoading('btnSleep', true);
+            try {
+                await supabase.from('users').update({ sleep_hours: h }).eq('id', currentUser.id);
+                userData.sleep_hours = h; updateUI();
+                addChatMessage("ia", `Sueño registrado: ${h} horas (*${evaluateSleep(h).status}*).`);
+                document.getElementById('inputSleepHours').value = '';
+            } catch(e) { alert("Error: " + e.message); } finally { setLoading('btnSleep', false); }
+        }
+
+        async function logSexActivity() {
+            setLoading('btnSex', true);
+            try {
+                var currentCals = userData.calories || 0;
+                await supabase.from('users').update({ sex_activity: true, calories: Math.max(0, currentCals - 100) }).eq('id', currentUser.id);
+                userData.sex_activity = true; userData.calories = Math.max(0, currentCals - 100); updateUI();
+                addChatMessage("ia", "Actividad sexual registrada. ❤️ Excelente para la salud cardiovascular.");
+            } catch(e) { alert("Error: " + e.message); } finally { setLoading('btnSex', false); }
+        }
+
+        function quickAddFood(foodName) { document.getElementById('foodInput').value = foodName; logFood(); }
+
+        function searchInKnowledgeBase(query) {
+            var queryLower = query.toLowerCase();
+            var queryWords = queryLower.split(' ').filter(w => w.length >= 3);
+            var results = [];
+            knowledgeBase.forEach(doc => {
+                var score = 0, matchedSnippet = '';
+                if (doc.title && doc.title.toLowerCase().includes(queryLower)) score += 10;
+                if (doc.tags) { var tagsLower = doc.tags.toLowerCase(); queryWords.forEach(word => { if (tagsLower.includes(word)) score += 5; }); }
+                if (doc.content) {
+                    var contentLower = doc.content.toLowerCase();
+                    queryWords.forEach(word => {
+                        var index = contentLower.indexOf(word);
+                        if (index !== -1) {
+                            score += 2;
+                            var start = Math.max(0, index - 100);
+                            var end = Math.min(doc.content.length, index + word.length + 100);
+                            matchedSnippet = doc.content.substring(start, end);
+                        }
+                    });
+                }
+                if (score > 0) results.push({ doc: doc, score: score, snippet: matchedSnippet });
+            });
+            return results.sort((a, b) => b.score - a.score);
+        }
+
+        function findFoodInKnowledgeBase(foodName) {
+            var results = searchInKnowledgeBase(foodName);
+            if (results.length > 0 && results[0].score >= 5) {
+                var snippet = results[0].snippet;
+                var calMatch = snippet.match(/(\d+(?:\.\d+)?)\s*(?:kcal|calorías|calorias|cal)/i);
+                if (calMatch) return { calorias: parseFloat(calMatch[1]), carbs: 0, protein: 0, grasa: 0, fibra: 0, nota: `📖 Extraído de "${results[0].doc.title}".` };
+            }
+            return null;
+        }
+
+        async function logFood() {
+            var foodName = document.getElementById('foodInput').value.toLowerCase().trim();
+            if (!foodName) return alert("Escribe un alimento.");
+            setLoading('btnFood', true);
+            try {
+                var foodData = rdFoodDB[foodName];
+                var mealType = getMealType();
+                if (!foodData) {
+                    addChatMessage("ia", `🔍 Buscando "${foodName}" en mi base de conocimientos...`);
+                    await new Promise(r => setTimeout(r, 800));
+                    var pdfData = findFoodInKnowledgeBase(foodName);
+                    if (pdfData) { foodData = pdfData; addChatMessage("ia", `✅ ¡Encontrado en mi base de datos!`); } 
+                    else { foodData = { calorias: 250, carbs: 30, protein: 10, grasa: 10, fibra: 2, nota: "⚠️ Valor estimado." }; addChatMessage("ia", `⚠️ No encontré información específica. Usaré valores estimados.`); }
+                }
+                var newCalories = (userData.calories || 0) + foodData.calorias;
+                await supabase.from('users').update({ calories: newCalories }).eq('id', currentUser.id);
+                userData.calories = newCalories;
+                await supabase.from('daily_logs').insert({ user_id: currentUser.id, food_name: foodName, calories: foodData.calorias, fat: foodData.grasa, carbs: foodData.carbs, protein: foodData.protein, fiber: foodData.fibra, notes: foodData.nota, meal_type: mealType, logged_at: new Date().toISOString() });
+                await loadTodayLogs(); updateUI(); renderDailyLog();
+                document.getElementById('foodInput').value = '';
+            } catch(e) { alert("Error: " + e.message); } finally { setLoading('btnFood', false); }
+        }
+
+        function toggleChat() {
+            var widget = document.getElementById('chatWidget');
+            var btn = document.getElementById('chatOpenBtn');
+            if (widget.classList.contains('hidden')) { widget.classList.remove('hidden'); btn.classList.add('hidden'); } 
+            else { widget.classList.add('hidden'); btn.classList.remove('hidden'); }
+        }
+
+        function addChatMessage(sender, text, isHTML = false) {
+            var container = document.getElementById('chatMessages');
+            var div = document.createElement('div');
+            div.className = sender === "user" ? "text-right fade-in" : "text-left fade-in";
+            var bubble = document.createElement('div');
+            bubble.className = sender === "user" ? "inline-block bg-emerald-600 text-white p-3 rounded-2xl rounded-tr-sm text-sm max-w-[85%]" : "inline-block bg-white border border-slate-200 text-slate-800 p-3 rounded-2xl rounded-tl-sm text-sm max-w-[85%]";
+            bubble.innerHTML = isHTML ? text : text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+            div.appendChild(bubble); container.appendChild(div); container.scrollTop = container.scrollHeight;
+            if (currentUser && sender === "ia") supabase.from('chat_history').insert({ user_id: currentUser.id, sender: sender, message: text });
+        }
+
+        function appendChatOptions(options) {
+            var container = document.getElementById('chatMessages');
+            var optionsDiv = document.createElement('div');
+            optionsDiv.className = "text-left fade-in mt-1";
+            var html = '<div class="flex flex-wrap gap-2">';
+            options.forEach(opt => { html += `<button class="chat-option-btn" onclick="selectChatOption('${opt}')">${opt}</button>`; });
+            html += '</div>';
+            optionsDiv.innerHTML = html; container.appendChild(optionsDiv); container.scrollTop = container.scrollHeight;
+        }
+
+        function selectChatOption(optionText) {
+            addChatMessage("user", optionText);
+            var containers = document.querySelectorAll('.flex.flex-wrap.gap-2');
+            if(containers.length > 0) containers[containers.length - 1].remove();
+            setTimeout(() => { processHealthFlow(optionText); }, 600);
+        }
+
+        function processHealthFlow(userText) {
+            var lowerText = userText.toLowerCase();
+            if (chatState.step === 1) {
+                chatState.data.sintoma = userText;
+                if (lowerText.includes("pecho") || lowerText.includes("respirar") || lowerText.includes("desmayo") || lowerText.includes("sangre")) {
+                    addChatMessage("ia", "⚠️ **Alerta:** Los síntomas que mencionas podrían requerir atención inmediata. ¿Tienes dolor opresivo en el pecho o dificultad severa para respirar?");
+                    appendChatOptions(["Sí, es grave", "No, son leves"]);
+                    chatState.step = 2;
+                } else {
+                    addChatMessage("ia", "Entendido. ¿Hace cuántos días te sientes así y has tomado algún medicamento?");
+                    chatState.step = 3;
+                }
+            } else if (chatState.step === 2) {
+                if (lowerText.includes("sí") || lowerText.includes("grave") || lowerText.includes("si")) {
+                    addChatMessage("ia", "🚨 **ESTO ES UNA EMERGENCIA.** Por favor, acude de inmediato al centro de salud más cercano o llama al 911. No esperes.");
+                    chatState.active = false;
+                } else {
+                    addChatMessage("ia", "De acuerdo, descartamos una emergencia inmediata. ¿Hace cuántos días tienes estos síntomas?");
+                    chatState.step = 3;
+                }
+            } else if (chatState.step === 3) {
+                chatState.data.duracion = userText;
+                addChatMessage("ia", `Gracias por la información, ${userData.name}. Basado en que tienes "${chatState.data.sintoma}" desde hace ${chatState.data.duracion}, te recomiendo:\n\n1. Descansar e hidratarte bien.\n2. Monitorear si los síntomas empeoran.\n3. Si no mejoras en 48 horas, acude a tu centro de salud local.\n\n👉 *Nota: Soy un asistente virtual y esta guía no reemplaza una consulta médica.*`);
+                chatState.active = false;
+            }
+        }
+
+        // =========================================================================
+        // PARTE 1: SISTEMA DE MEMORIA, NORMALIZACIÓN Y FLUJO DE EMERGENCIAS
+        // =========================================================================
+        function cleanText(text) {
+            return text.toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
+                .trim();
+        }
+
+        async function sendMessage() {
+            var input = document.getElementById('chatInput');
+            var rawText = input.value.trim();
+            if (!rawText) return;
+
+            addChatMessage("user", rawText);
+            input.value = "";
+
+            var container = document.getElementById('chatMessages');
+            var typingDiv = document.createElement('div');
+            typingDiv.id = "typingIndicator";
+            typingDiv.className = "text-left fade-in";
+            typingDiv.innerHTML = `<div class="inline-block bg-white border p-3 rounded-2xl rounded-tl-sm"><span class="typing-dot inline-block w-2 h-2 bg-slate-400 rounded-full mx-0.5"></span><span class="typing-dot inline-block w-2 h-2 bg-slate-400 rounded-full mx-0.5"></span><span class="typing-dot inline-block w-2 h-2 bg-slate-400 rounded-full mx-0.5"></span></div>`;
+            container.appendChild(typingDiv);
+            container.scrollTop = container.scrollHeight;
+
+            await new Promise(r => setTimeout(r, 800));
+            var indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+
+            var cleanedText = cleanText(rawText);
+            var todayCals = parseInt(userData.calories) || 0;
+            var totalInches = (parseInt(userData.height_feet || 0) * 12) + parseInt(userData.height_inches || 0);
+            var bmi = totalInches > 0 ? parseFloat(((userData.weight_lbs / (totalInches * totalInches)) * 703).toFixed(1)) : 0;
+            var userCondition = userData.health_condition ? cleanText(userData.health_condition) : "";
+
+            if (chatState.active) { 
+                processHealthFlow(rawText); 
+                return; 
+            }
+
+            if (cleanedText.match(/\b(dolor|sintoma|me siento|me duele|enfermo|malestar|fiebre|nausea|vomito|mareo|presion|pecho|asfixia)\b/)) {
+                chatState.active = true; 
+                chatState.step = 1; 
+                chatState.data = { primer_sintoma: cleanedText };
+                
+                var alertPrefix = "";
+                if (cleanedText.match(/\b(pecho|brazo izquierdo|falta de aire|asfixia|desmayo)\b/)) {
+                    alertPrefix = "🚨 **ALERTA DE SEGURIDAD:** Si estás experimentando un dolor opresivo en el pecho, dolor que se extiende al brazo izquierdo o dificultad severa para respirar, por favor busca atención médica de emergencia o contacta a los servicios de emergencia de inmediato.\n\n";
+                }
+                
+                addChatMessage("ia", alertPrefix + "Lamento que te sientas mal. Para poder orientarte con precisión dentro de tu triaje local: ¿Hace cuánto tiempo comenzó este malestar y qué otro síntoma lo acompaña?");
+                return;
+            }
+
+            var foodIntentMatch = cleanedText.match(/\b(calorias|engorda|nutrientes|proteina|grasa|carbohidratos|cenar|desayunar|almorzar)\b/);
+            var localFoodWords = ["mangu", "arroz", "pollo", "empanada", "moro", "sancocho", "yuca", "platano", "pescado", "huevo", "cerdo", "ensalada", "mango", "manzana"];
+            var mentionedFood = localFoodWords.find(word => new RegExp('\\b' + word + '\\b').test(cleanedText));
+
+            if (!mentionedFood && chatState.lastEntity && foodIntentMatch) {
+                mentionedFood = chatState.lastEntity;
+            }
+            if (mentionedFood && !foodIntentMatch && chatState.lastIntent) {
+                cleanedText += " " + chatState.lastIntent; 
+            }
+
+            if (mentionedFood || foodIntentMatch) {
+                var foodKey = mentionedFood || chatState.lastEntity;
+                var localFoodData = rdFoodDB[foodKey];
+
+                if (localFoodData) {
+                    chatState.lastEntity = foodKey;
+                    if (foodIntentMatch) chatState.lastIntent = foodIntentMatch[1];
+
+                    var customWarning = "";
+                    if (userCondition.includes("diabetes") && ["mangu", "arroz", "moro", "platano", "yuca", "empanada"].includes(foodKey)) {
+                        customWarning += "\n\n⚠️ **Control de Diabetes:** Este alimento eleva rápidamente la glucosa en sangre debido a su carga de carbohidratos simples. Te recomiendo moderar la porción a un máximo de media taza y acompañarlo siempre de fibra (vegetales) y proteínas magras.";
+                    }
+                    if (userCondition.includes("hipertension") && ["sancocho", "moro", "empanada", "cerdo"].includes(foodKey)) {
+                        customWarning += "\n\n⚠️ **Control de Presión Arterial:** Atención con los niveles de sodio y grasas saturadas en este plato. Si lo preparas de manera casera, reduce al mínimo la sal y evita embutidos muy procesados.";
+                    }
+                    if (bmi >= 25.0 && (cleanedText.includes("engorda") || cleanedText.includes("calorias"))) {
+                        customWarning += `\n\n⚖️ **Gestión de Peso:** Tu IMC actual es de ${bmi} (Rango de Sobrepeso/Obesidad). Este alimento aporta ${localFoodData.calorias} kcal por porción. Controlar la cantidad te ayudará a mantenerte en tu objetivo calórico diario.`;
+                    }
+
+                    addChatMessage("ia", `🍎 **Análisis Nutricional de ${foodKey.toUpperCase()}:**\n• Calorías: ${localFoodData.calorias} kcal\n• Carbohidratos: ${localFoodData.carbs}g | Proteínas: ${localFoodData.protein}g | Grasas: ${localFoodData.grasa}g\n\n💡 *Nota de la app:* ${localFoodData.nota}${customWarning}`);
+                    return;
+                }
+            }
+
+            if (cleanedText.match(/\b(salud|mi perfil|condicion|tratamiento|medicina|medicamento|alergia|diagnostico|recomiendame|consejo)\b/)) {
+                var report = `🩺 **Evaluación Inteligente de tu Perfil de Salud:**\n\n`;
+                report += `• **Paciente:** ${userData.name || "Usuario"} (${userData.age || "--"} años)\n`;
+                report += `• **Estado Físico:** Peso ${userData.weight_lbs || "--"} lbs | IMC: ${bmi} (${getHealthStatusLabel(bmi)})\n`;
+                report += `• **Condición Clínica:** ${userData.health_condition || "Ninguna registrada"}\n`;
+                if (userData.treatment_plan) report += `• **Plan Médico Activo:** "${userData.treatment_plan}"\n`;
+                
+                report += `\n🎯 **Recomendaciones Personalizadas de mi IA:**\n`;
+                if (userCondition.includes("diabetes")) report += `- Mantén bajo control los carbohidratos de absorción rápida. Prioriza víveres integrales o porciones medidas.\n`;
+                if (userCondition.includes("hipertension")) report += `- Evita el uso de caldos de pollo industriales o condimentos altos en sodio en tu cocina diaria.\n`;
+                if (bmi >= 25.0) report += `- Tu IMC está por encima del rango ideal. Recomiendo un enfoque de déficit calórico ligero reduciendo porciones y aumentando tu actividad física.\n`;
+                else if (bmi < 18.5 && bmi > 0) report += `- Tu IMC indica bajo peso. Es ideal priorizar grasas saludables (como aguacate) y proteínas para un aumento limpio y saludable.\n`;
+
+                var waterTrack = userData.water_intake || 0;
+                if (waterTrack < 5) report += `- Hidratación baja: Registras ${waterTrack}/8 vasos de agua. Beber agua ayuda a regular la presión y asiste a tus riñones si tomas medicamentos.\n`;
+                else report += `- ¡Excelente nivel de hidratación hoy! Llevas ${waterTrack}/8 vasos de agua.\n`;
+
+                addChatMessage("ia", report);
+                return;
+            }
+
+            if (cleanedText.match(/\b(comer|dieta|desayuno|almuerzo|cena|hambre|calorias hoy)\b/)) {
+                var mealType = getMealType ? getMealType() : "";
+                var mealLabel = getMealLabel ? getMealLabel(mealType) : "Balance del día";
+                var caloriesLeft = 2000 - todayCals;
+                
+                var advice = `🍽️ **Balance de Energía Diaria:**\n${mealLabel}.\nLlevas consumidas **${todayCals} kcal** hoy. `;
+                if (caloriesLeft > 0) {
+                    advice += `Te quedan aproximadamente **${caloriesLeft} kcal** disponibles para cumplir tus metas de hoy. Elige fuentes limpias de proteínas y vegetales abundantes.`;
+                } else {
+                    advice += `⚠️ Has alcanzado tu meta calórica diaria recomendada. Procura que tus ingestas restantes sean ligeras o basadas en infusiones libres de azúcar y alimentos densos en agua (como pepino).`;
+                }
+                addChatMessage("ia", advice);
+                return;
+            }
+
+            if (typeof searchInKnowledgeBase === "function") {
+                var searchResults = searchInKnowledgeBase(rawText);
+                if (searchResults && searchResults.length > 0) {
+                    var bestResult = searchResults[0];
+                    var minScoreRequired = cleanedText.match(/\b(que es|como funciona|definicion)\b/) ? 3 : 5;
+
+                    if (bestResult.score >= minScoreRequired) {
+                        var snippet = bestResult.snippet.length > 300 ? bestResult.snippet.substring(0, 300) + '...' : bestResult.snippet;
+                        addChatMessage("ia", `📚 **Consulta de Base de Conocimiento Científica:**\n\n📌 *Fuente:* **${bestResult.doc.title}**\n\n💡 *Análisis clínico encontrado:*\n"${snippet}"\n\n¿Deseas aplicar esta información a tu caso o condición particular?`);
+                        return;
+                    }
+                }
+            }
+
+            addChatMessage("ia", `Comprendo tu inquietud. Como tu asistente local de salud, no encontré una regla exacta para esa frase, pero puedo ayudarte si me describes un **síntoma**, me preguntas por las **propiedades de un alimento**, o si pides un **análisis de tu estado de salud actual**.`);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function getHealthStatusLabel(bmi) {
+            if (bmi === 0) return "Datos insuficientes";
+            if (bmi < 18.5) return "Bajo Peso";
+            if (bmi < 25.0) return "Peso Saludable";
+            if (bmi < 30.0) return "Sobrepeso";
+            return "Obesidad";
+        }
+
+        async function loadPendingQuestions() {
+            var listContainer = document.getElementById('pendingQuestionsList');
+            listContainer.innerHTML = '<p class="text-center text-slate-500 py-4">Cargando...</p>';
+            try {
+                var { data, error } = await supabase.from('pending_ai_questions').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                if (!data || data.length === 0) { listContainer.innerHTML = `<div class="text-center py-8 text-slate-500">✅ ¡Excelente! No hay preguntas pendientes.</div>`; return; }
+                listContainer.innerHTML = data.map(q => `
+                    <div class="bg-white p-4 rounded-lg border border-purple-200 shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="text-xs font-bold text-purple-600 uppercase">Pregunta del usuario:</span>
+                                <p class="text-slate-800 font-medium mt-1">"${q.user_question}"</p>
+                                <p class="text-xs text-slate-500 mt-1">Fecha: ${new Date(q.created_at).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <input type="text" id="keyword_${q.id}" placeholder="Palabra clave (ej: mango, gastritis)" class="w-full p-2 mb-2 text-sm border border-slate-300 rounded-lg">
+                            <textarea id="answer_${q.id}" placeholder="Escribe aquí la respuesta médica correcta..." class="w-full p-2 text-sm border border-slate-300 rounded-lg h-20 mb-2"></textarea>
+                            <button id="btn_teach_${q.id}" onclick="teachAI('${q.id}')" class="w-full bg-purple-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition">💾 Guardar y "Enseñar" a la IA</button>
+                        </div>
+                    </div>`).join('');
+            } catch (e) { listContainer.innerHTML = `<p class="text-red-600 text-center py-4">❌ Error: ${e.message}</p>`; }
+        }
+
+        async function teachAI(questionId) {
+            var keyword = document.getElementById(`keyword_${questionId}`).value.trim();
+            var answer = document.getElementById(`answer_${questionId}`).value.trim();
+            if (!keyword || !answer) return alert("⚠️ Debes escribir una palabra clave y la respuesta correcta.");
+            var btn = document.getElementById(`btn_teach_${questionId}`);
+            var originalBtnText = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = `<span class="animate-spin inline-block mr-2">⟳</span> Guardando...`;
+            try {
+                var { error: saveError } = await supabase.from('ai_learned_responses').insert({ question_keyword: keyword.toLowerCase(), ai_answer: answer, created_by: currentUser.id });
+                if (saveError) throw saveError;
+                await supabase.from('pending_ai_questions').delete().eq('id', questionId);
+                alert("✅ ¡IA Entrenada con éxito!");
+                await loadKnowledgeBase(); loadPendingQuestions();
+            } catch (e) { alert("❌ Error al guardar: " + e.message); } 
+            finally { btn.disabled = false; btn.innerHTML = originalBtnText; }
+        }
+
+        function openStatsModal() {
+            document.getElementById('statsModal').classList.remove('hidden');
+            document.getElementById('statWeight').innerText = userData.weight_lbs || 0;
+            var totalInches = (userData.height_feet * 12) + parseInt(userData.height_inches || 0);
+            document.getElementById('statBMI').innerText = ((userData.weight_lbs / (totalInches * totalInches)) * 703).toFixed(1);
+            renderCharts();
+        }
+        function closeStatsModal() {
+            document.getElementById('statsModal').classList.add('hidden');
+            Object.values(chartInstances).forEach(chart => { if (chart) chart.destroy(); });
+            chartInstances = {};
+        }
+        function changeStatsPeriod(period) {
+            currentStatsPeriod = period;
+            var btnDay = document.getElementById('btnPeriodDay');
+            var btnWeek = document.getElementById('btnPeriodWeek');
+            var btnMonth = document.getElementById('btnPeriodMonth');
+            btnDay.className = period === 'day' ? 'px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm' : 'px-4 py-2 bg-white text-blue-600 border border-blue-300 rounded-lg font-semibold text-sm';
+            btnWeek.className = period === 'week' ? 'px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm' : 'px-4 py-2 bg-white text-blue-600 border border-blue-300 rounded-lg font-semibold text-sm';
+            btnMonth.className = period === 'month' ? 'px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm' : 'px-4 py-2 bg-white text-blue-600 border border-blue-300 rounded-lg font-semibold text-sm';
+            var labels = { 'day': 'Hoy', 'week': 'Esta Semana', 'month': 'Este Mes' };
+            document.getElementById('statPeriodLabel').innerText = labels[period];
+            renderCharts();
+        }
+
+        async function renderCharts() {
+            var startDate = new Date(), endDate = new Date();
+            if (currentStatsPeriod === 'day') startDate.setHours(0, 0, 0, 0);
+            else if (currentStatsPeriod === 'week') startDate.setDate(startDate.getDate() - 7);
+            else if (currentStatsPeriod === 'month') startDate.setMonth(startDate.getMonth() - 1);
+            
+            var { data: logs } = await supabase.from('daily_logs').select('*').eq('user_id', currentUser.id).gte('logged_at', startDate.toISOString()).lte('logged_at', endDate.toISOString());
+            var periodLogs = logs || [];
+            let totalCarbs = 0, totalProtein = 0, totalFat = 0, totalCalories = 0;
+            periodLogs.forEach(item => { totalCarbs += (item.carbs || 0); totalProtein += (item.protein || 0); totalFat += (item.fat || 0); totalCalories += (item.calories || 0); });
+            if (totalCarbs === 0 && totalProtein === 0 && totalFat === 0) { totalCarbs = 1; totalProtein = 1; totalFat = 1; }
+            document.getElementById('statCalories').innerText = totalCalories;
+
+            if (chartInstances.macros) chartInstances.macros.destroy();
+            chartInstances.macros = new Chart(document.getElementById('macrosChart').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: ['Carbohidratos (g)', 'Proteínas (g)', 'Grasas (g)'], datasets: [{ data: [totalCarbs, totalProtein, totalFat], backgroundColor: ['#f59e0b', '#ef4444', '#eab308'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            var currentWeight = parseFloat(userData.weight_lbs) || 150;
+            var totalInches = (userData.height_feet * 12) + parseInt(userData.height_inches || 0);
+            var bmi = parseFloat(((currentWeight / (totalInches * totalInches)) * 703).toFixed(1));
+            var dailyGoal = bmi >= 25 ? Math.max(1200, Math.round((currentWeight * 10) - 500)) : (bmi < 18.5 ? Math.round((currentWeight * 15) + 300) : Math.round(currentWeight * 12));
+            dailyGoal = Math.round(dailyGoal / 50) * 50;
+            var periodDays = currentStatsPeriod === 'day' ? 1 : (currentStatsPeriod === 'week' ? 7 : 30);
+            var periodGoal = dailyGoal * periodDays;
+            var goalLabel = currentStatsPeriod === 'day' ? 'Meta Hoy' : (currentStatsPeriod === 'week' ? 'Meta Semana' : 'Meta Mes');
+
+            let consumptionColor = '#10b981';
+            if (bmi >= 25 && totalCalories > periodGoal) consumptionColor = '#ef4444';
+            else if (bmi < 18.5 && totalCalories < periodGoal) consumptionColor = '#f59e0b';
+
+            if (chartInstances.cals) chartInstances.cals.destroy();
+            chartInstances.cals = new Chart(document.getElementById('caloriesChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: ['Consumidas', goalLabel], datasets: [{ label: 'kcal', data: [totalCalories, periodGoal], backgroundColor: [consumptionColor, '#3b82f6'], borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function setImportMode(mode) {
+            currentImportMode = mode;
+            var btnPdf = document.getElementById('btnModePdf');
+            var btnExcel = document.getElementById('btnModeExcel');
+            if (mode === 'pdf') {
+                btnPdf.className = 'px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold text-sm';
+                btnExcel.className = 'px-4 py-2 bg-white text-indigo-600 border border-indigo-300 rounded-lg font-semibold text-sm hover:bg-indigo-100 transition';
+                document.getElementById('pdfLabel').classList.remove('hidden');
+                document.getElementById('excelLabel').classList.add('hidden');
+            } else {
+                btnExcel.className = 'px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm';
+                btnPdf.className = 'px-4 py-2 bg-white text-emerald-600 border border-emerald-300 rounded-lg font-semibold text-sm hover:bg-emerald-100 transition';
+                document.getElementById('pdfLabel').classList.add('hidden');
+                document.getElementById('excelLabel').classList.remove('hidden');
+            }
+        }
+
+        async function handlePdfUpload(event) {
+            var file = event.target.files[0];
+            if (!file || file.type !== 'application/pdf') return alert("⚠️ Selecciona un PDF válido.");
+            if (!document.getElementById('kbTitle').value.trim()) document.getElementById('kbTitle').value = file.name.replace('.pdf', '');
+            try {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                var pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+                var pagesContainer = document.getElementById('pdfPagesContainer');
+                pagesContainer.innerHTML = '<p class="text-center text-slate-500">⏳ Renderizando...</p>';
+                var totalText = "";
+                for (var i = 1; i <= pdf.numPages; i++) {
+                    var page = await pdf.getPage(i);
+                    var textContent = await page.getTextContent();
+                    totalText += "\n--- Página " + i + " ---\n" + textContent.items.map(item => item.str).join(' ');
+                    if (i <= 5) {
+                        var viewport = page.getViewport({ scale: 1.3 });
+                        var canvas = document.createElement('canvas');
+                        canvas.className = 'pdf-preview-canvas mx-auto';
+                        canvas.width = viewport.width; canvas.height = viewport.height;
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+                        pagesContainer.appendChild(Object.assign(document.createElement('div'), { className: 'text-center text-xs text-slate-500 mb-2', innerText: `Página ${i} de ${pdf.numPages}` }));
+                        pagesContainer.appendChild(canvas);
+                    }
+                }
+                extractedPdfText = totalText.trim();
+                document.getElementById('kbContentPdf').value = extractedPdfText;
+                document.getElementById('pdfPreviewModal').classList.remove('hidden');
+            } catch (error) { alert("❌ Error: " + error.message); }
+        }
+        function closePdfPreview() { document.getElementById('pdfPreviewModal').classList.add('hidden'); document.getElementById('pdfFile').value = ''; }
+        function confirmPdfExtraction() { extractedPdfText = document.getElementById('kbContentPdf').value.trim(); extractedExcelText = ""; closePdfPreview(); alert("✅ PDF confirmado."); }
+
+        async function handleExcelUpload(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            if (!document.getElementById('kbTitle').value.trim()) document.getElementById('kbTitle').value = file.name.replace(/\.(xlsx|xls|csv)$/i, '');
+            try {
+                currentExcelWorkbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+                var sheetSelect = document.getElementById('sheetSelect');
+                if (currentExcelWorkbook.SheetNames.length > 1) {
+                    document.getElementById('sheetSelector').classList.remove('hidden');
+                    sheetSelect.innerHTML = currentExcelWorkbook.SheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+                } else { document.getElementById('sheetSelector').classList.add('hidden'); }
+                renderExcelSheet(currentExcelWorkbook.SheetNames[0]);
+                document.getElementById('excelPreviewModal').classList.remove('hidden');
+            } catch (error) { alert("❌ Error al leer el Excel: " + error.message); }
+        }
+        function changeExcelSheet() { renderExcelSheet(document.getElementById('sheetSelect').value); }
+        function renderExcelSheet(sheetName) {
+            var jsonData = XLSX.utils.sheet_to_json(currentExcelWorkbook.Sheets[sheetName], { header: 1, defval: '' });
+            if (jsonData.length === 0) { document.getElementById('excelTableContainer').innerHTML = '<p class="text-center text-slate-500 p-4">La hoja está vacía</p>'; return; }
+            var tableHtml = '<table class="excel-preview-table"><thead><tr>';
+            jsonData[0].forEach(h => tableHtml += `<th>${h || ''}</th>`);
+            tableHtml += '</tr></thead><tbody>';
+            for (var i = 1; i < jsonData.length; i++) {
+                var row = jsonData[i];
+                if (row.every(cell => cell === '' || cell === null || cell === undefined)) continue;
+                tableHtml += '<tr>';
+                for (var j = 0; j < jsonData[0].length; j++) tableHtml += `<td>${row[j] !== undefined ? row[j] : ''}</td>`;
+                tableHtml += '</tr>';
+            }
+            tableHtml += '</tbody></table>';
+            document.getElementById('excelTableContainer').innerHTML = tableHtml;
+            convertExcelToStructuredText(jsonData);
+        }
+        function convertExcelToStructuredText(jsonData) {
+            if (jsonData.length < 2) { document.getElementById('kbContentExcel').value = ''; return; }
+            var headers = jsonData[0].map(h => String(h).trim());
+            var structuredText = `--- Datos importados desde Excel ---\nColumnas: ${headers.join(' | ')}\n\n--- Datos estructurados por fila ---\n\n`;
+            var alimentoCol = headers.findIndex(h => /alimento|producto|comida|nombre/i.test(h));
+            var caloriasCol = headers.findIndex(h => /calorías|calorias|kcal|cal/i.test(h));
+            for (var i = 1; i < jsonData.length; i++) {
+                var row = jsonData[i];
+                if (row.every(cell => cell === '' || cell === null || cell === undefined)) continue;
+                structuredText += `Fila ${i}:\n`;
+                if (alimentoCol !== -1 && row[alimentoCol]) {
+                    structuredText += `  Alimento: ${row[alimentoCol]}\n`;
+                    if (caloriasCol !== -1 && row[caloriasCol]) structuredText += `  Calorías: ${row[caloriasCol]} kcal\n`;
+                } else { headers.forEach((header, idx) => { if (row[idx]) structuredText += `  ${header}: ${row[idx]}\n`; }); }
+                structuredText += `\n`;
+            }
+            document.getElementById('kbContentExcel').value = structuredText;
+        }
+        function closeExcelPreview() { document.getElementById('excelPreviewModal').classList.add('hidden'); document.getElementById('excelFile').value = ''; currentExcelWorkbook = null; }
+        function confirmExcelExtraction() { extractedExcelText = document.getElementById('kbContentExcel').value.trim(); extractedPdfText = ""; closeExcelPreview(); alert("✅ Excel importado correctamente."); }
+
+        async function loadPendingApprovalsCount() {
+            try {
+                var { data } = await supabase.rpc('count_pending_approvals');
+                var count = data || 0;
+                var badge = document.getElementById('approvalBellBadge');
+                var icon = document.getElementById('approvalBellIcon');
+                if (count > 0) { badge.classList.remove('hidden'); badge.innerText = count > 99 ? '99+' : count; icon.classList.add('bell-ring'); }
+                else { badge.classList.add('hidden'); icon.classList.remove('bell-ring'); }
+            } catch (e) { console.error(e); }
+        }
+        async function openPendingApprovalsModal() {
+            document.getElementById('pendingApprovalsModal').classList.remove('hidden');
+            var listContainer = document.getElementById('pendingUsersList');
+            listContainer.innerHTML = '<p class="text-center text-slate-400 py-8">⏳ Cargando...</p>';
+            try {
+                var { data, error } = await supabase.rpc('get_pending_users');
+                if (error) throw error;
+                if (!data || data.length === 0) { listContainer.innerHTML = `<div class="text-center py-8"><div class="text-5xl mb-3">✅</div><p class="text-slate-600 font-semibold">No hay registros pendientes</p></div>`; return; }
+                listContainer.innerHTML = data.map(u => {
+                    var date = new Date(u.user_created_at).toLocaleDateString('es-DO');
+                    var heightStr = (u.user_height_feet || 0) + "'" + (u.user_height_inches || 0) + '"';
+                    return `<div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg gap-3">
+                        <div class="flex items-center gap-3"><div class="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center text-2xl">🆕</div><div><div class="font-bold text-slate-800">${u.user_name}</div><div class="text-sm text-slate-600">${u.user_email}</div><div class="text-xs text-slate-500 mt-1">📅 ${date} | ⚖️ ${u.user_weight || 0} lbs | 📏 ${heightStr}</div></div></div>
+                        <div class="flex gap-2"><button onclick="approveUser('${u.user_id}', '${(u.user_name || '').replace(/'/g, "\\'")}')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">✅ Aprobar</button><button onclick="rejectUser('${u.user_id}', '${(u.user_name || '').replace(/'/g, "\\'")}')" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">❌ Rechazar</button></div></div>`;
+                }).join('');
+            } catch (e) { listContainer.innerHTML = `<p class="text-red-600 text-center py-8">❌ Error: ${e.message}</p>`; }
+        }
+        function closePendingApprovalsModal() { document.getElementById('pendingApprovalsModal').classList.add('hidden'); }
+        async function approveUser(userId, userName) {
+            if (!confirm(`¿Aprobar a "${userName}"?`)) return;
+            try { var { error } = await supabase.rpc('approve_user', { target_user_id: userId }); if (error) throw error; alert(`✅ Usuario "${userName}" aprobado.`); openPendingApprovalsModal(); loadPendingApprovalsCount(); showAdminPanel(); } 
+            catch (e) { alert("❌ Error: " + e.message); }
+        }
+        async function rejectUser(userId, userName) {
+            if (!confirm(`⚠️ ¿RECHAZAR y ELIMINAR a "${userName}"?`)) return;
+            try { await supabase.from('users').delete().eq('id', userId); alert(`❌ Usuario "${userName}" rechazado.`); openPendingApprovalsModal(); loadPendingApprovalsCount(); } 
+            catch (e) { alert("❌ Error: " + e.message); }
+        }
+        async function loadOrphanedCount() {
+            try {
+                var { data } = await supabase.rpc('count_orphaned_users');
+                var count = data || 0;
+                var badge = document.getElementById('bellBadge');
+                var icon = document.getElementById('bellIcon');
+                if (count > 0) { badge.classList.remove('hidden'); badge.innerText = count > 99 ? '99+' : count; icon.classList.add('bell-ring'); }
+                else { badge.classList.add('hidden'); icon.classList.remove('bell-ring'); }
+            } catch (e) { console.error(e); }
+        }
+        async function openOrphanedUsersModal() {
+            document.getElementById('orphanedModal').classList.remove('hidden');
+            var listContainer = document.getElementById('orphanedUsersList');
+            listContainer.innerHTML = '<p class="text-center text-slate-400 py-8">⏳ Cargando...</p>';
+            try {
+                var { data, error } = await supabase.rpc('get_orphaned_users');
+                if (error) throw error;
+                if (!data || data.length === 0) { listContainer.innerHTML = `<div class="text-center py-8"><div class="text-5xl mb-3">✅</div><p class="text-slate-600 font-semibold">¡Todo limpio!</p></div>`; return; }
+                listContainer.innerHTML = data.map(u => `<div class="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div class="flex items-center gap-3"><div class="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center text-xl">👤</div><div><div class="font-semibold text-slate-800">${u.email}</div><div class="text-xs text-slate-500">Registrado: ${new Date(u.created_at).toLocaleDateString('es-DO')}</div></div></div>
+                    <div class="flex gap-2"><button onclick="reactivateUser('${u.user_id}', '${u.email}')" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">✅ Reactivar</button><button onclick="permanentlyDeleteUser('${u.user_id}', '${u.email}')" class="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">🗑️ Eliminar</button></div></div>`).join('');
+            } catch (e) { listContainer.innerHTML = `<p class="text-red-600 text-center py-8">❌ Error: ${e.message}</p>`; }
+        }
+        function closeOrphanedModal() { document.getElementById('orphanedModal').classList.add('hidden'); }
+        async function reactivateUser(userId, email) {
+            var suggestedName = email.split('@')[0].replace(/[._-]/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            var userName = prompt(`👤 REACTIVAR USUARIO\n\nCorreo: ${email}\n\nEscribe el NOMBRE COMPLETO:\n\n💡 Sugerencia: "${suggestedName}"`, suggestedName);
+            if (userName === null || !userName.trim()) return;
+            try { var { error } = await supabase.rpc('reactivate_user', { target_user_id: userId, new_name: userName.trim() }); if (error) throw error; alert(`✅ Usuario reactivado!\n👤 Nombre: ${userName.trim()}`); openOrphanedUsersModal(); loadOrphanedCount(); } 
+            catch (e) { alert("❌ Error: " + e.message); }
+        }
+        async function permanentlyDeleteUser(userId, email) {
+            if (!confirm(`⚠️ ¿ELIMINAR DEFINITIVAMENTE a "${email}"?`)) return;
+            try {
+                await supabase.from('chat_history').delete().eq('user_id', userId);
+                await supabase.from('daily_logs').delete().eq('user_id', userId);
+                try { await supabase.rpc('admin_delete_user_completely', { target_user_id: userId }); } catch (e) {}
+                alert(`✅ Usuario "${email}" eliminado.`); openOrphanedUsersModal(); loadOrphanedCount();
+            } catch (e) { alert("❌ Error: " + e.message); }
+        }
+        async function saveKnowledgeBase() {
+            var title = document.getElementById('kbTitle').value.trim();
+            var tags = document.getElementById('kbTags').value.trim();
+            var content = extractedPdfText || extractedExcelText;
+            if (!title || !content) return alert("⚠️ Sube y confirma un archivo primero.");
+            setLoading('btnSaveKB', true);
+            try {
+                var { error } = await supabase.from('knowledge_base').insert({ title: title, tags: tags, content: content });
+                if (error) throw error;
+                alert("✅ ¡Fuente guardada en la Memoria de la IA!");
+                document.getElementById('kbTitle').value = ''; document.getElementById('kbTags').value = ''; 
+                extractedPdfText = ""; extractedExcelText = "";
+                document.getElementById('pdfFile').value = ''; document.getElementById('excelFile').value = '';
+                await loadKnowledgeBase();
+            } catch (e) { alert("❌ Error: " + e.message); } 
+            finally { setLoading('btnSaveKB', false); }
+        }
+        async function showAdminPanel() {
+            try {
+                var { data, error } = await supabase.from('users').select('*').eq('approved', true).order('created_at', { ascending: false });
+                if (error) throw error;
+                var tbody = document.getElementById('adminUserTable');
+                tbody.innerHTML = "";
+                data.forEach((u) => {
+                    var waterPct = Math.min(100, ((u.water_intake || 0) / 8) * 100);
+                    var sleepPct = Math.min(100, ((u.sleep_hours || 0) / 8) * 100);
+                    var heightStr = u.height_feet + "'" + (u.height_inches || 0) + '"';
+                    var tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
+                    tr.innerHTML = `<td class="p-4 font-medium">${u.name} ${u.is_admin ? '<span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full ml-2">Admin</span>' : ''}<br><span class="text-xs text-slate-500">${u.email}</span><br><span class="text-xs text-slate-400">${u.weight_lbs} lbs | ${heightStr}</span></td>
+                        <td class="p-4 text-sm text-slate-600">${u.health_condition ? '<span class="text-red-600 font-semibold bg-red-50 px-2 py-1 rounded">⚠️ ' + u.health_condition + '</span>' : '<span class="text-slate-400">Sin registrar</span>'}</td>
+                        <td class="p-4"><div class="text-xs mb-1 text-slate-600">💧 Agua: ${u.water_intake || 0}/8</div><div class="w-full bg-blue-200 rounded-full h-1.5 mb-3"><div class="bg-blue-600 h-1.5 rounded-full" style="width: ${waterPct}%"></div></div><div class="text-xs mb-1 text-slate-600">😴 Sueño: ${u.sleep_hours || 0}h</div><div class="w-full bg-purple-200 rounded-full h-1.5"><div class="bg-purple-600 h-1.5 rounded-full" style="width: ${sleepPct}%"></div></div></td>
+                        <td class="p-4 text-center">${!u.is_admin ? `<button onclick="openStatsModalForAdmin('${u.id}')" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 transition mb-2 w-full block">📊 Estadísticas</button><button onclick="openTreatmentModal('${u.id}', '${u.name.replace(/'/g, "\\'")}', ${u.water_intake || 0}, ${u.sleep_hours || 0}, ${u.calories || 0}, '${(u.health_condition || '').replace(/'/g, "\\'")}', '${(u.treatment_plan || '').replace(/'/g, "\\'")}')" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition mb-2 w-full block">🩺 Tratar</button><button onclick="adminDeleteUser('${u.id}', '${u.name.replace(/'/g, "\\'")}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 transition w-full block">🗑️ Eliminar</button>` : '<span class="text-xs text-slate-400">N/A</span>'}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch(e) { alert("Error: " + e.message); }
+        }
+        async function openStatsModalForAdmin(targetUserId) {
+            var { data: targetUser } = await supabase.from('users').select('*').eq('id', targetUserId).single();
+            var originalUserData = userData;
+            userData = targetUser;
+            openStatsModal();
+            userData = originalUserData;
+        }
+        async function adminDeleteUser(userId, userName) {
+            if (!confirm(`⚠️ ¿ELIMINAR a "${userName}"?`)) return;
+            try { var { error } = await supabase.rpc('admin_delete_user_completely', { target_user_id: userId }); if (error) throw error; alert(`✅ "${userName}" eliminado.`); showAdminPanel(); loadOrphanedCount(); } 
+            catch (e) { alert("❌ Error: " + e.message); }
+        }
+        function openTreatmentModal(userId, name, water, sleep, cals, condition, treatment) {
+            currentEditingUserId = userId;
+            document.getElementById('modalUserName').innerText = name;
+            document.getElementById('modalHealthCondition').value = condition;
+            document.getElementById('modalTreatmentPlan').value = treatment;
+            document.getElementById('treatmentModal').classList.remove('hidden');
+        }
+        function closeTreatmentModal() { document.getElementById('treatmentModal').classList.add('hidden'); currentEditingUserId = null; }
+        async function saveUserTreatment() {
+            setLoading('btnSaveTreatment', true);
+            try {
+                var { error } = await supabase.from('users').update({ health_condition: document.getElementById('modalHealthCondition').value.trim(), treatment_plan: document.getElementById('modalTreatmentPlan').value.trim() }).eq('id', currentEditingUserId);
+                if (error) throw error;
+                alert("✅ Plan actualizado.");
+                closeTreatmentModal(); showAdminPanel();
+            } catch (e) { alert("❌ Error: " + e.message); } 
+            finally { setLoading('btnSaveTreatment', false); }
+        }
+        function openPatientProfileModal() {
+            document.getElementById('patientAge').value = userData.age || '';
+            document.getElementById('patientGender').value = userData.gender || 'M';
+            document.getElementById('patientWeight').value = userData.weight_lbs || '';
+            document.getElementById('patientHeightFeet').value = userData.height_feet || '';
+            document.getElementById('patientHeightInches').value = userData.height_inches || '';
+            document.getElementById('patientActivity').value = userData.activity_level || 'moderado';
+            document.getElementById('patientHealthCondition').value = userData.health_condition || '';
+            document.getElementById('patientTreatmentPlan').value = userData.treatment_plan || '';
+            document.getElementById('patientProfileModal').classList.remove('hidden');
+        }
+        function closePatientProfileModal() { document.getElementById('patientProfileModal').classList.add('hidden'); }
+        async function savePatientProfile() {
+            var age = parseInt(document.getElementById('patientAge').value) || 30;
+            var gender = document.getElementById('patientGender').value;
+            var weightLbs = parseFloat(document.getElementById('patientWeight').value);
+            var heightFeet = parseFloat(document.getElementById('patientHeightFeet').value);
+            var heightInches = parseFloat(document.getElementById('patientHeightInches').value);
+            var activity = document.getElementById('patientActivity').value;
+            var condition = document.getElementById('patientHealthCondition').value.trim();
+            var treatment = document.getElementById('patientTreatmentPlan').value.trim();
+            if (!weightLbs || weightLbs <= 0) return alert("⚠️ Ingresa un peso válido.");
+            if (!heightFeet || heightFeet < 3 || heightFeet > 8) return alert("⚠️ Altura en pies inválida (3-8).");
+            if (heightInches < 0 || heightInches > 11) return alert("⚠️ Pulgadas deben ser 0-11.");
+            setLoading('btnSavePatientProfile', true);
+            try {
+                var { error } = await supabase.from('users').update({ age: age, gender: gender, weight_lbs: weightLbs, height_feet: heightFeet, height_inches: heightInches || 0, activity_level: activity, health_condition: condition, treatment_plan: treatment }).eq('id', currentUser.id);
+                if (error) throw error;
+                userData.age = age; userData.gender = gender; userData.weight_lbs = weightLbs; 
+                userData.height_feet = heightFeet; userData.height_inches = heightInches || 0;
+                userData.activity_level = activity; userData.health_condition = condition; userData.treatment_plan = treatment;
+                updateUI();
+                alert("✅ ¡Perfil actualizado!");
+                closePatientProfileModal();
+            } catch (e) { alert("❌ Error: " + e.message); } 
+            finally { setLoading('btnSavePatientProfile', false); }
+        }
+        function setLoading(btnId, isLoading) {
+            var btn = document.getElementById(btnId);
+            if (!btn) return;
+            if (isLoading) {
+                btn.dataset.originalText = btn.innerHTML; btn.disabled = true;
+                btn.innerHTML = `<span class="animate-spin inline-block mr-2">⟳</span> Guardando...`;
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+            } else {
+                btn.disabled = false; btn.innerHTML = btn.dataset.originalText || 'Guardar'; 
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -35,7 +35,6 @@ body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
 .chat-option-btn:hover { background-color: #10b981; color: white; }
 .creator-footer { background-color: #064e3b; color: white; text-align: center; padding: 12px; font-size: 0.85rem; margin-top: auto; }
 .creator-footer a { color: #6ee7b7; text-decoration: none; font-weight: bold; }
-/* 🧠 NUEVOS ESTILOS PARA TABS DEL PANEL DE INTELIGENCIA */
 .intelligence-tab { padding: 10px 20px; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: #64748b; transition: all 0.2s; }
 .intelligence-tab.active { color: #7c3aed; border-bottom-color: #7c3aed; background-color: #f5f3ff; }
 .intelligence-tab:hover:not(.active) { color: #475569; background-color: #f8fafc; }
@@ -266,7 +265,7 @@ body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
 Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin801@hotmail.com">lenin801@hotmail.com</a> | 📞 <a href="tel:8092182052">809-218-2052</a>
 </footer>
 
-<!-- 🧠 MODAL PANEL DE INTELIGENCIA (MEJORADO CON TABS) -->
+<!-- 🧠 MODAL PANEL DE INTELIGENCIA (CON TABS) -->
 <div id="intelligenceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto fade-in">
 <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-purple-50 rounded-t-2xl sticky top-0 z-10">
@@ -277,13 +276,10 @@ Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin
 <button onclick="closeIntelligenceModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
 </div>
 <div class="p-6">
-<!-- 🧠 TABS DE NAVEGACIÓN -->
 <div class="flex border-b border-slate-200 mb-4">
 <div class="intelligence-tab active" id="tabLearned" onclick="switchIntelligenceTab('learned')">💡 Respuestas Aprendidas <span id="learnedCount" class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full ml-2">0</span></div>
 <div class="intelligence-tab" id="tabKB" onclick="switchIntelligenceTab('kb')">📚 Base de Conocimiento (PDF/Excel) <span id="kbCount" class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full ml-2">0</span></div>
 </div>
-
-<!-- CONTENIDO TAB 1: RESPUESTAS APRENDIDAS -->
 <div id="learnedTabContent">
 <div class="mb-4">
 <input type="text" id="intelligenceSearch" placeholder="🔍 Buscar por palabra clave o respuesta..." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500" oninput="filterIntelligenceList()">
@@ -292,8 +288,6 @@ Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin
 <p class="text-center text-slate-400 py-8">Cargando memoria de la IA...</p>
 </div>
 </div>
-
-<!-- CONTENIDO TAB 2: BASE DE CONOCIMIENTO -->
 <div id="kbTabContent" class="hidden">
 <div class="mb-4">
 <input type="text" id="kbSearch" placeholder="🔍 Buscar por título, etiqueta o contenido..." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" oninput="filterKBList()">
@@ -306,7 +300,7 @@ Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin
 </div>
 </div>
 
-<!-- MODAL DE EDICIÓN DE INTELIGENCIA (RESPUESTAS APRENDIDAS) -->
+<!-- MODAL EDICIÓN RESPUESTA APRENDIDA -->
 <div id="editIntelligenceModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4">
 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl fade-in">
 <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-indigo-50 rounded-t-2xl">
@@ -318,12 +312,10 @@ Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin
 <div>
 <label class="block text-sm font-semibold text-slate-700 mb-1">Palabra Clave:</label>
 <input type="text" id="editIntelligenceKeyword" class="w-full p-3 border border-slate-300 rounded-lg">
-<p class="text-xs text-slate-500 mt-1">💡 La IA detectará esta palabra aunque el usuario la escriba sin tildes, en mayúsculas o con errores.</p>
 </div>
 <div>
 <label class="block text-sm font-semibold text-slate-700 mb-1">Respuesta que dará la IA:</label>
 <textarea id="editIntelligenceAnswer" class="w-full p-3 border border-slate-300 rounded-lg h-40"></textarea>
-<p class="text-xs text-slate-500 mt-1">💡 Puedes usar **negritas** y saltos de línea para dar formato.</p>
 </div>
 <div class="flex gap-3">
 <button onclick="closeEditIntelligenceModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-300 transition">❌ Cancelar</button>
@@ -333,7 +325,7 @@ Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin
 </div>
 </div>
 
-<!-- 🧠 NUEVO MODAL: EDITAR BASE DE CONOCIMIENTO (PDF/EXCEL) -->
+<!-- MODAL EDICIÓN DOCUMENTO KB -->
 <div id="editKBModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4">
 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto fade-in">
 <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-emerald-50 rounded-t-2xl">
@@ -348,12 +340,11 @@ Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin
 </div>
 <div>
 <label class="block text-sm font-semibold text-slate-700 mb-1">Etiquetas (separadas por coma):</label>
-<input type="text" id="editKBTags" class="w-full p-3 border border-slate-300 rounded-lg" placeholder="nutrición, proteínas, dieta">
+<input type="text" id="editKBTags" class="w-full p-3 border border-slate-300 rounded-lg">
 </div>
 <div>
 <label class="block text-sm font-semibold text-slate-700 mb-1">Contenido extraído:</label>
 <textarea id="editKBContent" class="w-full p-3 border border-slate-300 rounded-lg h-64 font-mono text-xs"></textarea>
-<p class="text-xs text-slate-500 mt-1">💡 Este es el texto que la IA usa para buscar información cuando le preguntan sobre alimentos o temas nutricionales.</p>
 </div>
 <div class="flex gap-3">
 <button onclick="closeEditKBModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-300 transition">❌ Cancelar</button>
@@ -544,7 +535,7 @@ Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin
 </div>
 
 <!-- CHAT FLOTANTE -->
-<div id="chatWidget" class="fixed bottom-16 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 hidden flex flex-col overflow-hidden z-50 fade-in">
+<div id="chatWidget" class="fixed bottom-16 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 hidden flex-col overflow-hidden z-50 fade-in">
 <div class="bg-emerald-600 text-white p-4 flex justify-between items-center cursor-pointer" onclick="toggleChat()">
 <span class="font-bold">🤖 Nutriólogo IA</span><span>−</span>
 </div>
@@ -738,6 +729,21 @@ var labels = { 'desayuno': '🌅 Desayuno', 'almuerzo': '☀️ Almuerzo', 'cena
 return labels[mealType] || '🍽️';
 }
 
+// =========================================================================
+// 🧹 NUEVO: LIMPIEZA TOTAL DEL CHAT AL CERRAR SESIÓN
+// =========================================================================
+function resetChatUI() {
+var widget = document.getElementById('chatWidget');
+var openBtn = document.getElementById('chatOpenBtn');
+var messages = document.getElementById('chatMessages');
+var input = document.getElementById('chatInput');
+if (messages) messages.innerHTML = '';
+if (input) input.value = '';
+chatState.active = false; chatState.step = 0; chatState.data = {}; chatState.lastIntent = ""; chatState.lastEntity = "";
+if (widget) { widget.classList.add('hidden'); widget.style.display = ''; }
+if (openBtn) { openBtn.classList.add('hidden'); openBtn.style.display = ''; }
+}
+
 async function checkAndResetDailyData() {
 var today = getRDDateISO();
 if (userData.last_reset_date !== today) {
@@ -788,7 +794,12 @@ if (res.error) throw res.error;
 } catch (error) { alert("❌ Error: " + error.message); }
 finally { setLoading('btnLogin', false); }
 }
-async function appLogout() { await supabase.auth.signOut(); }
+
+// 🧹 MEJORA: logout ahora limpia el chat completamente
+async function appLogout() {
+resetChatUI();
+await supabase.auth.signOut();
+}
 
 async function loadKnowledgeBase() {
 var kbData = await supabase.from('knowledge_base').select('*');
@@ -798,17 +809,12 @@ learnedResponses = learnedData.data || [];
 updateIntelligenceBadge();
 }
 
-// 🧠 MEJORA: Badge ahora suma ambos tipos de conocimiento
 function updateIntelligenceBadge() {
 var badge = document.getElementById('intelligenceBadge');
 if (!badge) return;
 var count = learnedResponses.length + knowledgeBase.length;
-if (count > 0) {
-badge.classList.remove('hidden');
-badge.innerText = count > 99 ? '99+' : count;
-} else {
-badge.classList.add('hidden');
-}
+if (count > 0) { badge.classList.remove('hidden'); badge.innerText = count > 99 ? '99+' : count; }
+else { badge.classList.add('hidden'); }
 }
 
 supabase.auth.onAuthStateChange(async (event, session) => {
@@ -821,12 +827,14 @@ if (!res.data) { document.getElementById('pendingScreen').classList.remove('hidd
 userData = res.data;
 if (!userData.approved && !userData.is_admin) { document.getElementById('pendingScreen').classList.remove('hidden'); return; }
 if (userData.is_admin) {
+resetChatUI(); // 🧹 Garantiza que el chat quede cerrado y limpio para el admin
 document.getElementById('adminPanel').classList.remove('hidden');
 showAdminPanel(); loadPendingQuestions(); loadOrphanedCount(); loadPendingApprovalsCount();
 } else {
 document.getElementById('mainApp').classList.remove('hidden');
 document.getElementById('chatWidget').classList.remove('hidden');
 document.getElementById('chatWidget').style.display = 'flex';
+document.getElementById('chatOpenBtn').classList.add('hidden');
 await loadKnowledgeBase();
 await checkAndResetDailyData();
 await loadTodayLogs();
@@ -836,8 +844,10 @@ if (userData.treatment_plan || userData.health_condition) greeting += ` Veo que 
 addChatMessage("ia", greeting);
 }
 } else {
+// 🧹 MEJORA: al perder la sesión, se limpia y oculta todo el chat
+resetChatUI();
 document.getElementById('authScreen').classList.remove('hidden');
-['mainApp', 'adminPanel', 'pendingScreen', 'chatWidget', 'chatOpenBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
+['mainApp', 'adminPanel', 'pendingScreen'].forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 });
 
@@ -1020,7 +1030,7 @@ function toggleChat() {
 var widget = document.getElementById('chatWidget');
 var btn = document.getElementById('chatOpenBtn');
 if (widget.classList.contains('hidden')) { widget.classList.remove('hidden'); widget.style.display = 'flex'; btn.classList.add('hidden'); }
-else { widget.classList.add('hidden'); btn.classList.remove('hidden'); }
+else { widget.classList.add('hidden'); widget.style.display = ''; btn.classList.remove('hidden'); }
 }
 
 function addChatMessage(sender, text, isHTML = false) {
@@ -1051,8 +1061,30 @@ if (containers.length > 0) containers[containers.length - 1].remove();
 setTimeout(() => { processHealthFlow(optionText); }, 600);
 }
 
+// =========================================================================
+// FLUJO CONVERSACIONAL (incluye paso 10 = despedida/salida)
+// =========================================================================
 function processHealthFlow(userText) {
 var lowerText = userText.toLowerCase();
+
+// 🚪 PASO 10: Confirmación de salida del sistema
+if (chatState.step === 10) {
+var wantsStay = /(no|quedarme|permanecer|cancelar|negativo)/.test(lowerText);
+var wantsExit = /(si|sí|salir|salgo|confirmo|acepto)/.test(lowerText);
+if (wantsStay) {
+chatState.active = false; chatState.step = 0;
+addChatMessage("ia", "¡Perfecto! 😊 Me alegra que te quedes. Seguimos monitoreando tu salud juntos. ¿En qué más te puedo ayudar?");
+} else if (wantsExit) {
+chatState.active = false; chatState.step = 0;
+addChatMessage("ia", `¡Hasta pronto, ${userData.name}! 👋 Gracias por cuidarte con SaludRD Pro. Cerrando tu sesión de forma segura...`);
+setTimeout(() => { appLogout(); }, 1500);
+} else {
+addChatMessage("ia", "Por favor elige una de las opciones: ¿deseas salir del sistema?");
+appendChatOptions(["Sí, salir", "No, quedarme"]);
+}
+return;
+}
+
 if (chatState.step === 1) {
 chatState.data.sintoma = userText;
 if (lowerText.includes("pecho") || lowerText.includes("respirar") || lowerText.includes("desmayo") || lowerText.includes("sangre")) {
@@ -1106,6 +1138,9 @@ return typeof bestMatch.response === 'function' ? bestMatch.response({ hour: get
 return null;
 }
 
+// =========================================================================
+// MENSAJERÍA PRINCIPAL (con despedida inteligente)
+// =========================================================================
 async function sendMessage() {
 var input = document.getElementById('chatInput');
 var rawText = input.value.trim();
@@ -1125,8 +1160,10 @@ if (indicator) indicator.remove();
 
 var cleanQuery = cleanText(rawText);
 
+// 0. Flujo activo (triaje o confirmación de salida)
 if (chatState.active) { processHealthFlow(rawText); return; }
 
+// 1. Respuestas aprendidas por el admin
 var learnedAnswer = null;
 for (var qa of learnedResponses) {
 var cleanKeyword = cleanText(qa.question_keyword);
@@ -1137,9 +1174,21 @@ learnedAnswer = qa; break;
 }
 if (learnedAnswer) { addChatMessage("ia", `💡 **Respuesta aprendida:**\n\n${learnedAnswer.ai_answer}`); return; }
 
+// 2. Motor de intenciones catalogadas
 var smartResponse = findBestMatch(rawText);
 if (smartResponse) { addChatMessage("ia", smartResponse); return; }
 
+// 👋 2.5 NUEVO: DETECCIÓN DE DESPEDIDA -> ofrecer salida del sistema
+if (/(^| )(adios|adio|hasta luego|hasta pronto|chao|chau|bye|nos vemos|me voy|me retiro|cerrar sesion|salir del sistema)( |$)/.test(cleanQuery)) {
+chatState.active = true;
+chatState.step = 10;
+chatState.data = {};
+addChatMessage("ia", `¿Ya te vas, ${userData.name}? 🥺 Fue un gusto acompañarte hoy.\n\n**¿Deseas salir del sistema?** Si confirmas, cerraré tu sesión de forma segura.`);
+appendChatOptions(["Sí, salir", "No, quedarme"]);
+return;
+}
+
+// 3. Respuestas conversacionales básicas
 if (/^(hola|hey|saludos|buenos dias|buenas tardes|buenas noches|buenas|que tal)/.test(cleanQuery)) {
 addChatMessage("ia", `¡Hola ${userData.name}! 👋 Hoy llevas ${userData.calories || 0} kcal y ${userData.water_intake || 0}/8 vasos de agua. ¿En qué te ayudo?`);
 return;
@@ -1165,12 +1214,14 @@ addChatMessage("ia", `😴 Tu último registro de sueño es de ${userData.sleep_
 return;
 }
 
+// 4. Triaje de síntomas no catalogados
 if (/(dolor|sintoma|me siento|me duele|enfermo|malestar|fiebre|nausea|vomito|mareo)/.test(cleanQuery)) {
 chatState.active = true; chatState.step = 1; chatState.data = {};
 addChatMessage("ia", "Lamento que te sientas mal. ¿Hace cuánto comenzó este malestar y qué otro síntoma lo acompaña?");
 return;
 }
 
+// 5. Base de conocimientos (PDF/Excel)
 var searchResults = searchInKnowledgeBase(rawText);
 if (searchResults.length > 0 && searchResults[0].score >= 5) {
 var bestResult = searchResults[0];
@@ -1179,10 +1230,14 @@ addChatMessage("ia", `📚 **Encontré información relevante:**\n📌 *Fuente:*
 return;
 }
 
-addChatMessage("ia", `🤔 Comprendo, Buscaré información con el admin para brindarte una respuesta justa, pero puedo ayudarte si me describes un **síntoma**, o si te sientes mal.`);
+// 6. Fallback -> cola de entrenamiento
+addChatMessage("ia", `🤔 Comprendo tu inquietud. No encontré una regla exacta para esa frase, pero puedo ayudarte si me describes un **síntoma**, me preguntas por las **propiedades de un alimento**, o si pides un **análisis de tu estado de salud actual**.`);
 await supabase.from('pending_ai_questions').insert({ user_id: currentUser.id, user_question: rawText });
 }
 
+// =========================================================================
+// ENTRENAMIENTO (ADMIN)
+// =========================================================================
 async function loadPendingQuestions() {
 var listContainer = document.getElementById('pendingQuestionsList');
 listContainer.innerHTML = '<p class="text-center text-slate-500 py-4">Cargando...</p>';
@@ -1227,42 +1282,30 @@ finally { btn.disabled = false; btn.innerHTML = originalBtnText; }
 }
 
 // =========================================================================
-// 🧠 PANEL DE INTELIGENCIA MEJORADO (CON TABS)
+// 🧠 PANEL DE INTELIGENCIA (TABS)
 // =========================================================================
-
-// Función para cambiar entre pestañas
 function switchIntelligenceTab(tab) {
 var tabLearned = document.getElementById('tabLearned');
 var tabKB = document.getElementById('tabKB');
 var learnedContent = document.getElementById('learnedTabContent');
 var kbContent = document.getElementById('kbTabContent');
-
 if (tab === 'learned') {
-tabLearned.classList.add('active');
-tabKB.classList.remove('active');
-learnedContent.classList.remove('hidden');
-kbContent.classList.add('hidden');
+tabLearned.classList.add('active'); tabKB.classList.remove('active');
+learnedContent.classList.remove('hidden'); kbContent.classList.add('hidden');
 renderIntelligenceList();
 } else {
-tabLearned.classList.remove('active');
-tabKB.classList.add('active');
-learnedContent.classList.add('hidden');
-kbContent.classList.remove('hidden');
+tabLearned.classList.remove('active'); tabKB.classList.add('active');
+learnedContent.classList.add('hidden'); kbContent.classList.remove('hidden');
 renderKnowledgeBaseList();
 }
 }
 
 async function openIntelligenceModal() {
 document.getElementById('intelligenceModal').classList.remove('hidden');
-// Por defecto mostrar la pestaña de respuestas aprendidas
 switchIntelligenceTab('learned');
 }
+function closeIntelligenceModal() { document.getElementById('intelligenceModal').classList.add('hidden'); }
 
-function closeIntelligenceModal() {
-document.getElementById('intelligenceModal').classList.add('hidden');
-}
-
-// TAB 1: Renderizar respuestas aprendidas
 async function renderIntelligenceList() {
 var listContainer = document.getElementById('intelligenceList');
 listContainer.innerHTML = '<p class="text-center text-slate-400 py-8">Cargando memoria de la IA...</p>';
@@ -1273,20 +1316,14 @@ learnedResponses = res.data || [];
 updateIntelligenceBadge();
 document.getElementById('learnedCount').innerText = learnedResponses.length;
 document.getElementById('intelligenceCount').innerText = learnedResponses.length + knowledgeBase.length;
-
 if (learnedResponses.length === 0) {
-listContainer.innerHTML = `<div class="text-center py-12">
-<div class="text-6xl mb-4">💡</div>
-<p class="text-slate-500 text-lg">La IA aún no ha aprendido respuestas personalizadas.</p>
-<p class="text-slate-400 text-sm mt-2">Enseña respuestas desde la sección "Entrenar IA" cuando aparezcan preguntas pendientes.</p>
-</div>`;
+listContainer.innerHTML = `<div class="text-center py-12"><div class="text-6xl mb-4">💡</div><p class="text-slate-500 text-lg">La IA aún no ha aprendido respuestas personalizadas.</p><p class="text-slate-400 text-sm mt-2">Enséñale desde "Entrenar IA (Preguntas Pendientes)".</p></div>`;
 return;
 }
-
 listContainer.innerHTML = learnedResponses.map(item => {
 var date = new Date(item.created_at).toLocaleDateString('es-DO');
 return `
-<div class="intelligence-item bg-white p-4 rounded-lg border border-purple-200 shadow-sm hover:shadow-md transition" data-keyword="${item.question_keyword.toLowerCase()}" data-answer="${item.ai_answer.toLowerCase()}">
+<div class="intelligence-item bg-white p-4 rounded-lg border border-purple-200 shadow-sm hover:shadow-md transition" data-keyword="${(item.question_keyword || '').toLowerCase()}" data-answer="${(item.ai_answer || '').toLowerCase()}">
 <div class="flex justify-between items-start gap-3">
 <div class="flex-1">
 <div class="flex items-center gap-2 mb-2">
@@ -1294,20 +1331,16 @@ return `
 <span class="text-xs text-slate-500">${date}</span>
 </div>
 <p class="font-semibold text-slate-800 text-lg mb-2">"${item.question_keyword}"</p>
-<div class="bg-slate-50 p-3 rounded border-l-4 border-purple-400">
-<p class="text-sm text-slate-700 whitespace-pre-wrap">${item.ai_answer}</p>
-</div>
+<div class="bg-slate-50 p-3 rounded border-l-4 border-purple-400"><p class="text-sm text-slate-700 whitespace-pre-wrap">${item.ai_answer}</p></div>
 </div>
 <div class="flex flex-col gap-2">
-<button onclick="openEditIntelligenceModal('${item.id}', '${item.question_keyword.replace(/'/g, "\\'")}', \`${item.ai_answer.replace(/`/g, "'")}\`)" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 transition">✏️ Editar</button>
+<button onclick="openEditIntelligenceModal('${item.id}', '${(item.question_keyword || '').replace(/'/g, "\\'")}', \`${(item.ai_answer || '').replace(/`/g, "'")}\`)" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 transition">✏️ Editar</button>
 <button onclick="deleteIntelligenceResponse('${item.id}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 transition">🗑️ Eliminar</button>
 </div>
 </div>
 </div>`;
 }).join('');
-} catch (e) {
-listContainer.innerHTML = `<p class="text-red-600 text-center py-4">❌ Error: ${e.message}</p>`;
-}
+} catch (e) { listContainer.innerHTML = `<p class="text-red-600 text-center py-4">❌ Error: ${e.message}</p>`; }
 }
 
 function filterIntelligenceList() {
@@ -1317,12 +1350,8 @@ var visibleCount = 0;
 items.forEach(item => {
 var keyword = item.getAttribute('data-keyword') || '';
 var answer = item.getAttribute('data-answer') || '';
-if (keyword.includes(searchTerm) || answer.includes(searchTerm)) {
-item.style.display = '';
-visibleCount++;
-} else {
-item.style.display = 'none';
-}
+if (keyword.includes(searchTerm) || answer.includes(searchTerm)) { item.style.display = ''; visibleCount++; }
+else { item.style.display = 'none'; }
 });
 var existingMsg = document.getElementById('noResultsMsg');
 if (existingMsg) existingMsg.remove();
@@ -1341,10 +1370,7 @@ document.getElementById('editIntelligenceKeyword').value = keyword;
 document.getElementById('editIntelligenceAnswer').value = answer;
 document.getElementById('editIntelligenceModal').classList.remove('hidden');
 }
-
-function closeEditIntelligenceModal() {
-document.getElementById('editIntelligenceModal').classList.add('hidden');
-}
+function closeEditIntelligenceModal() { document.getElementById('editIntelligenceModal').classList.add('hidden'); }
 
 async function saveIntelligenceEdit() {
 var id = document.getElementById('editIntelligenceId').value;
@@ -1355,21 +1381,14 @@ var btn = document.getElementById('btnSaveIntelligenceEdit');
 var originalText = btn.innerHTML;
 btn.disabled = true; btn.innerHTML = '⟳ Guardando...';
 try {
-var cleanKeyword = cleanText(keyword);
-var res = await supabase.from('ai_learned_responses').update({
-question_keyword: cleanKeyword,
-ai_answer: answer
-}).eq('id', id);
+var res = await supabase.from('ai_learned_responses').update({ question_keyword: cleanText(keyword), ai_answer: answer }).eq('id', id);
 if (res.error) throw res.error;
 alert("✅ ¡Respuesta actualizada con éxito!");
 closeEditIntelligenceModal();
 await renderIntelligenceList();
 await loadKnowledgeBase();
-} catch (e) {
-alert("❌ Error al guardar: " + e.message);
-} finally {
-btn.disabled = false; btn.innerHTML = originalText;
-}
+} catch (e) { alert("❌ Error al guardar: " + e.message); }
+finally { btn.disabled = false; btn.innerHTML = originalText; }
 }
 
 async function deleteIntelligenceResponse(id) {
@@ -1380,12 +1399,9 @@ if (res.error) throw res.error;
 alert("✅ Respuesta eliminada correctamente.");
 await renderIntelligenceList();
 await loadKnowledgeBase();
-} catch (e) {
-alert("❌ Error al eliminar: " + e.message);
-}
+} catch (e) { alert("❌ Error al eliminar: " + e.message); }
 }
 
-// 🧠 NUEVO - TAB 2: Renderizar Base de Conocimiento (PDFs/Excel)
 async function renderKnowledgeBaseList() {
 var listContainer = document.getElementById('knowledgeBaseList');
 listContainer.innerHTML = '<p class="text-center text-slate-400 py-8">Cargando base de conocimiento...</p>';
@@ -1396,22 +1412,16 @@ knowledgeBase = res.data || [];
 updateIntelligenceBadge();
 document.getElementById('kbCount').innerText = knowledgeBase.length;
 document.getElementById('intelligenceCount').innerText = learnedResponses.length + knowledgeBase.length;
-
 if (knowledgeBase.length === 0) {
-listContainer.innerHTML = `<div class="text-center py-12">
-<div class="text-6xl mb-4">📚</div>
-<p class="text-slate-500 text-lg">Aún no has importado documentos.</p>
-<p class="text-slate-400 text-sm mt-2">Sube PDFs o Excel desde la sección "Alimentar la IA con Datos Nutricionales".</p>
-</div>`;
+listContainer.innerHTML = `<div class="text-center py-12"><div class="text-6xl mb-4">📚</div><p class="text-slate-500 text-lg">Aún no has importado documentos.</p><p class="text-slate-400 text-sm mt-2">Sube PDFs o Excel desde "Alimentar la IA con Datos Nutricionales".</p></div>`;
 return;
 }
-
 listContainer.innerHTML = knowledgeBase.map(item => {
 var date = new Date(item.created_at).toLocaleDateString('es-DO');
 var contentPreview = (item.content || '').substring(0, 300);
 var tags = (item.tags || '').split(',').map(t => t.trim()).filter(t => t).slice(0, 5);
 return `
-<div class="kb-item bg-white p-4 rounded-lg border border-indigo-200 shadow-sm hover:shadow-md transition" data-title="${(item.title || '').toLowerCase()}" data-tags="${(item.tags || '').toLowerCase()}" data-content="${(item.content || '').toLowerCase().substring(0, 500)}">
+<div class="kb-item bg-white p-4 rounded-lg border border-indigo-200 shadow-sm hover:shadow-md transition" data-title="${(item.title || '').toLowerCase()}" data-tags="${(item.tags || '').toLowerCase()}">
 <div class="flex justify-between items-start gap-3">
 <div class="flex-1">
 <div class="flex items-center gap-2 mb-2 flex-wrap">
@@ -1426,16 +1436,13 @@ ${tags.length > 0 ? tags.map(tag => `<span class="bg-slate-100 text-slate-600 te
 <div class="kb-content-preview">${contentPreview}${item.content && item.content.length > 300 ? '...' : ''}</div>
 </div>
 <div class="flex flex-col gap-2">
-<button onclick="viewKBContent('${item.id}')" class="bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-200 transition">👁️ Ver</button>
 <button onclick="openEditKBModal('${item.id}')" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 transition">✏️ Editar</button>
 <button onclick="deleteKBItem('${item.id}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 transition">🗑️ Eliminar</button>
 </div>
 </div>
 </div>`;
 }).join('');
-} catch (e) {
-listContainer.innerHTML = `<p class="text-red-600 text-center py-4">❌ Error: ${e.message}</p>`;
-}
+} catch (e) { listContainer.innerHTML = `<p class="text-red-600 text-center py-4">❌ Error: ${e.message}</p>`; }
 }
 
 function filterKBList() {
@@ -1445,13 +1452,8 @@ var visibleCount = 0;
 items.forEach(item => {
 var title = item.getAttribute('data-title') || '';
 var tags = item.getAttribute('data-tags') || '';
-var content = item.getAttribute('data-content') || '';
-if (title.includes(searchTerm) || tags.includes(searchTerm) || content.includes(searchTerm)) {
-item.style.display = '';
-visibleCount++;
-} else {
-item.style.display = 'none';
-}
+if (title.includes(searchTerm) || tags.includes(searchTerm)) { item.style.display = ''; visibleCount++; }
+else { item.style.display = 'none'; }
 });
 var existingMsg = document.getElementById('noKBResultsMsg');
 if (existingMsg) existingMsg.remove();
@@ -1464,12 +1466,6 @@ document.getElementById('knowledgeBaseList').appendChild(msg);
 }
 }
 
-function viewKBContent(id) {
-var item = knowledgeBase.find(k => k.id == id);
-if (!item) return;
-alert(`📄 ${item.title}\n\n🏷️ Etiquetas: ${item.tags || 'Ninguna'}\n\n📝 Contenido (${item.content ? item.content.length : 0} caracteres):\n\n${item.content || 'Sin contenido'}`);
-}
-
 function openEditKBModal(id) {
 var item = knowledgeBase.find(k => k.id == id);
 if (!item) return;
@@ -1479,10 +1475,7 @@ document.getElementById('editKBTags').value = item.tags || '';
 document.getElementById('editKBContent').value = item.content || '';
 document.getElementById('editKBModal').classList.remove('hidden');
 }
-
-function closeEditKBModal() {
-document.getElementById('editKBModal').classList.add('hidden');
-}
+function closeEditKBModal() { document.getElementById('editKBModal').classList.add('hidden'); }
 
 async function saveKBEdit() {
 var id = document.getElementById('editKBId').value;
@@ -1494,34 +1487,25 @@ var btn = document.getElementById('btnSaveKBEdit');
 var originalText = btn.innerHTML;
 btn.disabled = true; btn.innerHTML = '⟳ Guardando...';
 try {
-var res = await supabase.from('knowledge_base').update({
-title: title,
-tags: tags,
-content: content
-}).eq('id', id);
+var res = await supabase.from('knowledge_base').update({ title: title, tags: tags, content: content }).eq('id', id);
 if (res.error) throw res.error;
 alert("✅ ¡Documento actualizado con éxito!");
 closeEditKBModal();
 await renderKnowledgeBaseList();
 await loadKnowledgeBase();
-} catch (e) {
-alert("❌ Error al guardar: " + e.message);
-} finally {
-btn.disabled = false; btn.innerHTML = originalText;
-}
+} catch (e) { alert("❌ Error al guardar: " + e.message); }
+finally { btn.disabled = false; btn.innerHTML = originalText; }
 }
 
 async function deleteKBItem(id) {
-if (!confirm("⚠️ ¿Estás seguro de eliminar este documento de la base de conocimiento? La IA ya no podrá consultar su contenido.")) return;
+if (!confirm("⚠️ ¿Estás seguro de eliminar este documento? La IA ya no podrá consultar su contenido.")) return;
 try {
 var res = await supabase.from('knowledge_base').delete().eq('id', id);
 if (res.error) throw res.error;
 alert("✅ Documento eliminado correctamente.");
 await renderKnowledgeBaseList();
 await loadKnowledgeBase();
-} catch (e) {
-alert("❌ Error al eliminar: " + e.message);
-}
+} catch (e) { alert("❌ Error al eliminar: " + e.message); }
 }
 
 // =========================================================================

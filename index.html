@@ -35,6 +35,11 @@ body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
 .chat-option-btn:hover { background-color: #10b981; color: white; }
 .creator-footer { background-color: #064e3b; color: white; text-align: center; padding: 12px; font-size: 0.85rem; margin-top: auto; }
 .creator-footer a { color: #6ee7b7; text-decoration: none; font-weight: bold; }
+/* 🧠 NUEVOS ESTILOS PARA TABS DEL PANEL DE INTELIGENCIA */
+.intelligence-tab { padding: 10px 20px; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: #64748b; transition: all 0.2s; }
+.intelligence-tab.active { color: #7c3aed; border-bottom-color: #7c3aed; background-color: #f5f3ff; }
+.intelligence-tab:hover:not(.active) { color: #475569; background-color: #f8fafc; }
+.kb-content-preview { max-height: 200px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 11px; color: #475569; border: 1px solid #e2e8f0; white-space: pre-wrap; word-break: break-word; }
 </style>
 </head>
 <body class="text-slate-800 antialiased flex flex-col min-h-screen">
@@ -202,6 +207,10 @@ body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
 <div class="flex justify-between items-center mb-6">
 <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">🛡️ Panel de Monitoreo</h2>
 <div class="flex gap-2 items-center">
+<button onclick="openIntelligenceModal()" id="intelligenceBtn" class="relative p-2 rounded-lg hover:bg-slate-200 transition" title="Panel de Inteligencia IA">
+<span class="text-2xl">🧠</span>
+<span id="intelligenceBadge" class="hidden absolute -top-1 -right-1 bg-purple-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+</button>
 <button onclick="openPendingApprovalsModal()" id="approvalBellBtn" class="relative p-2 rounded-lg hover:bg-slate-200 transition" title="Nuevos registros por aprobar">
 <span class="text-2xl" id="approvalBellIcon">🔔</span>
 <span id="approvalBellBadge" class="hidden absolute -top-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
@@ -253,10 +262,106 @@ body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
 </div>
 </div>
 
-<!-- FOOTER DE CONTACTO / CREADOR -->
 <footer class="creator-footer">
 Desarrollado por: <strong>Lenin Justiniano</strong> | 📧 <a href="mailto:lenin801@hotmail.com">lenin801@hotmail.com</a> | 📞 <a href="tel:8092182052">809-218-2052</a>
 </footer>
+
+<!-- 🧠 MODAL PANEL DE INTELIGENCIA (MEJORADO CON TABS) -->
+<div id="intelligenceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+<div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto fade-in">
+<div class="p-6 border-b border-slate-200 flex justify-between items-center bg-purple-50 rounded-t-2xl sticky top-0 z-10">
+<div>
+<h3 class="text-xl font-bold text-purple-800 flex items-center gap-2">🧠 Panel de Inteligencia IA</h3>
+<p class="text-sm text-purple-600 mt-1">Administra todo el conocimiento de la IA. Total: <span id="intelligenceCount" class="font-bold">0</span> elementos</p>
+</div>
+<button onclick="closeIntelligenceModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+</div>
+<div class="p-6">
+<!-- 🧠 TABS DE NAVEGACIÓN -->
+<div class="flex border-b border-slate-200 mb-4">
+<div class="intelligence-tab active" id="tabLearned" onclick="switchIntelligenceTab('learned')">💡 Respuestas Aprendidas <span id="learnedCount" class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full ml-2">0</span></div>
+<div class="intelligence-tab" id="tabKB" onclick="switchIntelligenceTab('kb')">📚 Base de Conocimiento (PDF/Excel) <span id="kbCount" class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full ml-2">0</span></div>
+</div>
+
+<!-- CONTENIDO TAB 1: RESPUESTAS APRENDIDAS -->
+<div id="learnedTabContent">
+<div class="mb-4">
+<input type="text" id="intelligenceSearch" placeholder="🔍 Buscar por palabra clave o respuesta..." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500" oninput="filterIntelligenceList()">
+</div>
+<div id="intelligenceList" class="space-y-3">
+<p class="text-center text-slate-400 py-8">Cargando memoria de la IA...</p>
+</div>
+</div>
+
+<!-- CONTENIDO TAB 2: BASE DE CONOCIMIENTO -->
+<div id="kbTabContent" class="hidden">
+<div class="mb-4">
+<input type="text" id="kbSearch" placeholder="🔍 Buscar por título, etiqueta o contenido..." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" oninput="filterKBList()">
+</div>
+<div id="knowledgeBaseList" class="space-y-3">
+<p class="text-center text-slate-400 py-8">Cargando base de conocimiento...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MODAL DE EDICIÓN DE INTELIGENCIA (RESPUESTAS APRENDIDAS) -->
+<div id="editIntelligenceModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4">
+<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl fade-in">
+<div class="p-6 border-b border-slate-200 flex justify-between items-center bg-indigo-50 rounded-t-2xl">
+<h3 class="text-xl font-bold text-indigo-800 flex items-center gap-2">✏️ Editar Respuesta de la IA</h3>
+<button onclick="closeEditIntelligenceModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+</div>
+<div class="p-6 space-y-4">
+<input type="hidden" id="editIntelligenceId">
+<div>
+<label class="block text-sm font-semibold text-slate-700 mb-1">Palabra Clave:</label>
+<input type="text" id="editIntelligenceKeyword" class="w-full p-3 border border-slate-300 rounded-lg">
+<p class="text-xs text-slate-500 mt-1">💡 La IA detectará esta palabra aunque el usuario la escriba sin tildes, en mayúsculas o con errores.</p>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 mb-1">Respuesta que dará la IA:</label>
+<textarea id="editIntelligenceAnswer" class="w-full p-3 border border-slate-300 rounded-lg h-40"></textarea>
+<p class="text-xs text-slate-500 mt-1">💡 Puedes usar **negritas** y saltos de línea para dar formato.</p>
+</div>
+<div class="flex gap-3">
+<button onclick="closeEditIntelligenceModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-300 transition">❌ Cancelar</button>
+<button onclick="saveIntelligenceEdit()" id="btnSaveIntelligenceEdit" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">💾 Guardar Cambios</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 🧠 NUEVO MODAL: EDITAR BASE DE CONOCIMIENTO (PDF/EXCEL) -->
+<div id="editKBModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4">
+<div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto fade-in">
+<div class="p-6 border-b border-slate-200 flex justify-between items-center bg-emerald-50 rounded-t-2xl">
+<h3 class="text-xl font-bold text-emerald-800 flex items-center gap-2">✏️ Editar Documento de Conocimiento</h3>
+<button onclick="closeEditKBModal()" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+</div>
+<div class="p-6 space-y-4">
+<input type="hidden" id="editKBId">
+<div>
+<label class="block text-sm font-semibold text-slate-700 mb-1">Título del documento:</label>
+<input type="text" id="editKBTitle" class="w-full p-3 border border-slate-300 rounded-lg">
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 mb-1">Etiquetas (separadas por coma):</label>
+<input type="text" id="editKBTags" class="w-full p-3 border border-slate-300 rounded-lg" placeholder="nutrición, proteínas, dieta">
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 mb-1">Contenido extraído:</label>
+<textarea id="editKBContent" class="w-full p-3 border border-slate-300 rounded-lg h-64 font-mono text-xs"></textarea>
+<p class="text-xs text-slate-500 mt-1">💡 Este es el texto que la IA usa para buscar información cuando le preguntan sobre alimentos o temas nutricionales.</p>
+</div>
+<div class="flex gap-3">
+<button onclick="closeEditKBModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-300 transition">❌ Cancelar</button>
+<button onclick="saveKBEdit()" id="btnSaveKBEdit" class="flex-1 bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition">💾 Guardar Cambios</button>
+</div>
+</div>
+</div>
+</div>
 
 <!-- MODAL DE ESTADÍSTICAS -->
 <div id="statsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -486,9 +591,6 @@ var rdFoodDB = {
 "huevo": { calorias: 155, carbs: 1.1, protein: 13, grasa: 11, fibra: 0, nota: "Huevo cocido (100g)." }
 };
 
-// =========================================================================
-// LIMPIEZA Y NORMALIZACIÓN (sin tildes, sin comillas, sin signos ¿? ¡!)
-// =========================================================================
 function cleanText(text) {
 if (!text) return "";
 return text.toLowerCase()
@@ -499,11 +601,7 @@ return text.toLowerCase()
 .trim();
 }
 
-// =========================================================================
-// BASE DE CONOCIMIENTO INTELIGENTE (TODAS LAS PREGUNTAS)
-// =========================================================================
 const knowledgeBaseQA = [
-// Preguntas Personales
 { keywords: ["llamas", "nombre", "quien eres", "como te llamas"], response: "Soy el Asistente de Salud de SaludRD Pro, desarrollado para ayudarte a monitorear tu bienestar." },
 { keywords: ["creo", "creador", "desarrollo", "hizo", "lenin", "quien te creo", "quien te creó"], response: "Fui desarrollado por **Lenin Justiniano**. Puedes contactarlo en lenin801@hotmail.com o al 809-218-2052." },
 { keywords: ["edad", "años", "tiempo", "cual es tu edad"], response: "Soy una inteligencia artificial, no tengo edad humana, pero mi base de conocimientos se actualiza constantemente." },
@@ -512,7 +610,6 @@ const meal = ctx.hour >= 6 && ctx.hour < 11 ? "desayuno" : (ctx.hour >= 11 && ct
 const calsLeft = 2000 - ctx.cals;
 return `🍽️ **Para tu ${meal}:** Llevas ${ctx.cals} kcal hoy. Te quedan aprox. **${calsLeft > 0 ? calsLeft : 0} kcal**. Te recomiendo priorizar proteínas magras (pollo, pescado) y vegetales abundantes. Evita carbohidratos refinados en la ${meal === 'cena' ? 'noche' : 'mañana'} para mantener tu energía estable.`;
 }},
-// Síntomas Comunes
 { keywords: ["dolor", "cabeza", "cabeza no se quita", "migraña", "cefalea"], response: "🤕 **Dolor de cabeza persistente:** Asegúrate de estar bien hidratado (bebe 2 vasos de agua ahora). Si el dolor es intenso, pulsátil o no cede con paracetamol, y se acompaña de visión borrosa o vómitos, consulta a un médico de inmediato." },
 { keywords: ["estomago", "inflamado", "gases", "hinchazon", "distension"], response: "🫃 **Estómago inflamado/gases:** Prueba con té de manzanilla o anís después de las comidas. Evita legumbres, bebidas gaseosas y comer muy rápido. Si persiste por más de 3 días, requiere evaluación médica." },
 { keywords: ["tiembla", "ojo", "parpado", "parpadeo"], response: "👁️ **Temblor en el párpado:** Generalmente es benigno y causado por estrés, fatiga visual o exceso de cafeína. Descansa la vista, reduce el café y duerme bien. Si dura más de 2 semanas, consulta un neurólogo." },
@@ -520,139 +617,112 @@ return `🍽️ **Para tu ${meal}:** Llevas ${ctx.cals} kcal hoy. Te quedan apro
 { keywords: ["mareado", "levanto", "mañana", "cama", "mareo"], response: "😵 **Mareo al levantarse:** Se llama hipotensión ortostática. Levántate lentamente, siéntate al borde de la cama 30 segundos antes de pararte. Asegúrate de beber suficiente agua durante el día." },
 { keywords: ["diarrea", "corte", "tres dias", "suelto"], response: "🚽 **Diarrea:** Lo más importante es la hidratación. Prepara suero oral casero (1 litro de agua hervida + 6 cucharaditas de azúcar + 1/2 cucharadita de sal). Come arroz blanco, pollo hervido y plátano. Si hay sangre o dura más de 3 días, ve a urgencias." },
 { keywords: ["espalda", "riñones", "dolor", "renal", "lumbar"], response: "🔙 **Dolor de espalda vs. riñones:** El dolor muscular empeora al moverte o presionar la zona. El dolor de riñón es más profundo, constante, suele estar en un solo lado (debajo de las costillas) y puede acompañarse de cambios en la orina o fiebre." },
-// Comida, Dietas y Peso
 { keywords: ["cenar", "cena", "ligero", "rapido", "no engorde"], response: "🌙 **Cena ligera:** Opta por una ensalada con pechuga de pollo, un filete de pescado al horno o una sopa de vegetales. Evita carbohidratos pesados como arroz, mangú o fritos en la noche para facilitar la digestión y el sueño." },
 { keywords: ["agua", "comiendo", "durante", "despues", "tomar"], response: "💧 **Agua durante las comidas:** Tomar pequeños sorbos de agua durante la comida es perfectamente seguro y ayuda a la digestión. Evita beber grandes cantidades (más de 1 vaso) de golpe, ya que puede diluir temporalmente los jugos gástricos." },
 { keywords: ["ayuno", "intermitente", "horas", "comer"], response: "⏱️ **Ayuno intermitente:** El método más común es 16/8 (ayunar 16 horas, comer en una ventana de 8 horas, ej: de 12 pm a 8 pm). Durante el ayuno, solo se permite agua, café o té sin azúcar. Consulta a tu médico si tienes diabetes o gastritis antes de empezar." },
 { keywords: ["pan", "integral", "blanco", "bajar peso"], response: "🍞 **Pan integral vs. blanco:** El pan integral tiene más fibra, lo que te mantiene lleno por más tiempo y evita picos de glucosa, facilitando el control de peso. No es mágico, pero es una mejor opción si se consume con moderación." },
 { keywords: ["colesterol", "alto", "evitar", "alimentos"], response: "🫀 **Colesterol alto:** Evita grasas trans (comida rápida, frituras), carnes rojas grasosas y embutidos. Prioriza pescado, avena, aguacate, nueces y aceite de oliva. El ejercicio regular es clave para subir el colesterol 'bueno' (HDL)." },
 { keywords: ["limon", "ayunas", "quemar", "grasa", "panza"], response: "🍋 **Limón en ayunas:** El limón es rico en vitamina C y ayuda a la hidratación, pero **no quema grasa** por sí solo. La pérdida de peso solo ocurre con un déficit calórico sostenido. Úsalo como complemento, no como solución mágica." },
-// Medicamentos y Remedios
 { keywords: ["paracetamol", "ibuprofeno", "junto", "muela", "dolor"], response: "💊 **Paracetamol + Ibuprofeno:** Sí, se pueden alternar o tomar juntos para dolor intenso (como el dental), ya que actúan por mecanismos diferentes. Sin embargo, no excedas las dosis máximas diarias y tómalo con comida para proteger el estómago." },
 { keywords: ["alergia", "antibiotico", "piel", "suspender", "sarpullido"], response: "⚠️ **Alergia a antibiótico:** Si aparece sarpullido, picazón o hinchazón, **suspende el medicamento inmediatamente** y contacta a tu médico. Podría ser el inicio de una reacción alérgica más grave." },
 { keywords: ["pastilla", "presion", "hora", "mañana", "noche", "tension"], response: "🩺 **Pastilla de presión:** La mayoría de los médicos recomiendan tomarla por la mañana para cubrir el pico de presión matutino. Sin embargo, algunos estudios sugieren que tomarla de noche puede ser beneficioso. Sigue estrictamente la indicación de tu médico tratante." },
 { keywords: ["cerveza", "aspirina", "alcohol", "juntas"], response: "🍺 **Alcohol + Aspirina:** No es recomendable. Ambos irritan el revestimiento del estómago y aumentan el riesgo de sangrado gastrointestinal. Además, el alcohol puede interferir con la efectividad del medicamento." },
 { keywords: ["manzanilla", "jengibre", "te", "sirve"], response: "🍵 **Té de manzanilla con jengibre:** Es excelente para aliviar náuseas, reducir la inflamación estomacal, aliviar cólicos menstruales y promover la relajación antes de dormir." },
-// Sueño, Estrés y Energía
 { keywords: ["cansado", "duermo", "8 horas", "dia", "fatiga"], response: "😴 **Cansancio a pesar de dormir 8h:** Puede deberse a mala calidad de sueño (apnea, interrupciones), deshidratación, deficiencia de hierro/vitamina D, estrés o depresión. Si persiste, un chequeo sanguíneo es recomendable." },
 { keywords: ["sueño", "conciliar", "deudas", "relajar", "mente", "insomnio"], response: "🧠 **Insomnio por ansiedad:** Prueba la técnica de 'vaciado mental': escribe todas tus preocupaciones en un papel antes de dormir. Practica la respiración 4-7-8 (inhala 4s, aguanta 7s, exhala 8s) para activar el sistema nervioso parasimpático." },
 { keywords: ["cansancio", "energia", "trabajo", "fatiga"], response: "⚡ **Falta de energía:** Asegúrate de desayunar con proteína (ej. huevos), mantente hidratado, haz pausas activas de 5 min cada hora y evita el exceso de azúcar que causa 'bajones' de energía." },
 { keywords: ["cafe", "tazas", "dia", "corazon", "ansiedad"], response: "☕ **Límite de café:** La FDA recomienda un máximo de 400 mg de cafeína al día (aprox. 3-4 tazas de 240ml). Si sientes taquicardia o ansiedad, reduce el consumo a 1-2 tazas o cambia a descafeinado." },
-// Ejercicio y Rutinas Básicas
 { keywords: ["pasos", "dia", "sedentarismo", "saludable", "caminar"], response: "🚶 **Pasos diarios:** Para salir del sedentarismo, apunta a un mínimo de **7,000 - 10,000 pasos al día**. Empieza con 5,000 y aumenta 500 pasos cada semana para no lesionarte." },
 { keywords: ["duelen", "piernas", "pies", "ejercicio", "descansar", "entrenar"], response: "🦵 **Dolor muscular post-ejercicio:** Es normal (agujetas). Si el dolor es leve, un descanso activo (caminar suave) y estiramientos ayudan. Si el dolor es agudo, punzante o hay hinchazón, descansa totalmente y aplica hielo." },
 { keywords: ["correr", "pesas", "bajar peso", "mejor", "gimnasio"], response: "🏋️ **Correr vs. Pesas:** Lo ideal es **combinar ambos**. El cardio quema calorías durante la sesión, pero las pesas construyen músculo, lo que eleva tu metabolismo basal y te hace quemar más calorías incluso en reposo." },
-// Salud en el Hogar y Accidentes Caseros
 { keywords: ["quemar", "dedo", "estufa", "ampolla", "exprimir"], response: "🔥 **Quemadura con ampolla:** **NO la exprimas**, la piel protege contra infecciones. Enfría la zona con agua corriente fresca (no helada) por 10-15 min. Cubre con una gasa estéril y vaselina. Si es grande o en la cara/manos, ve al médico." },
 { keywords: ["sangra", "nariz", "hijo", "nada", "epistaxis"], response: "🩸 **Sangrado nasal:** Inclina la cabeza **hacia adelante** (no hacia atrás, para no tragar sangre). Presiona la parte blanda de la nariz contra el tabique durante 10 minutos seguidos sin soltar. Aplica frío en el puente nasal." },
 { keywords: ["pico", "mosquito", "araña", "rojo", "hinchado", "veneno"], response: "🕷️ **Picadura inflamada:** Lava con agua y jabón. Aplica una compresa fría y una crema de hidrocortisona o calamina. Si hay dificultad para respirar, hinchazón en la cara/garganta o la mancha roja se expande rápidamente, es una emergencia." },
 { keywords: ["limpia", "herida", "raspada", "rodilla", "infecte"], response: "🩹 **Herida raspada:** Lava con abundante agua y jabón neutro para retirar suciedad. Aplica un antiséptico (povidona yodada o clorhexidina). Mantén la herida húmeda con vaselina y cúbrela con un apósito hasta que cicatrice." },
 { keywords: ["jabon", "ojo", "arde", "enjuago"], response: "👁️ **Jabón en el ojo:** Enjuaga inmediatamente con abundante agua tibia o suero fisiológico durante 15 minutos, manteniendo el párpado abierto. Si el ardor o enrojecimiento persiste, acude a un oftalmólogo." },
-// Cambios de Clima y Enfermedades Estacionales
 { keywords: ["diferencio", "gripe", "resfriado", "dengue"], response: "🤒 **Gripe vs Resfriado vs Dengue:** El resfriado es leve (estornudos, congestión). La gripe es repentina con fiebre alta y dolor corporal. El dengue presenta fiebre alta, dolor intenso detrás de los ojos, dolor articular severo y a veces erupción en la piel." },
 { keywords: ["invierno", "tos seca", "noche", "dormir"], response: "🌙 **Tos seca nocturna:** Eleva la cabecera con una almohada extra, mantén la habitación húmeda (humidificador) y toma una cucharada de miel antes de dormir (no en menores de 1 año). Si dura más de 3 semanas, consulta al médico." },
 { keywords: ["duelen", "articulaciones", "rodillas", "frio", "llover"], response: "🌧️ **Dolor articular con el frío:** Los cambios de presión barométrica y el frío pueden aumentar la sensibilidad en articulaciones, especialmente si hay artrosis previa. Mantén la zona abrigada y realiza movimientos suaves." },
 { keywords: ["congestion", "nasal", "bebe", "amamantar"], response: "👶 **Congestión en bebé:** Usa gotas de suero fisiológico en cada fosa nasal y luego aspira suavemente con un aspirador nasal de pera. Hacerlo 15 min antes de amamantar le permitirá respirar mejor y alimentarse sin frustración." },
 { keywords: ["vitamina c", "gripe", "lluvias", "evitar"], response: "🍊 **Vitamina C y gripe:** No previene que te contagies, pero algunos estudios sugieren que tomarla regularmente puede reducir ligeramente la duración y severidad de los síntomas del resfriado." },
-// Etapas de la Vida y Cambios Corporales
 { keywords: ["50 años", "calores", "noches", "menopausia", "sofocos"], response: "🔥 **Calores repentinos (Sofocos):** Son un síntoma clásico de la perimenopausia o menopausia debido a la caída de estrógenos. Evita picantes, cafeína y alcohol. Consulta a tu ginecólogo sobre opciones de manejo." },
 { keywords: ["primeros sintomas", "embarazo", "primera semana"], response: "🤰 **Primeros síntomas de embarazo:** Retraso menstrual, sensibilidad en los senos, fatiga inusual, náuseas matutinas y ganas frecuentes de orinar. La única forma de confirmarlo en la primera semana es con un análisis de sangre (Beta hCG)." },
 { keywords: ["olvidando", "cosas", "llaves", "alzheimer", "demencia"], response: "🧠 **Olvidos en adultos mayores:** Olvidar dónde se dejaron las llaves es normal con la edad. Sin embargo, si olvida para qué sirven las llaves, se pierde en lugares conocidos o hay cambios drásticos de personalidad, es motivo de evaluación neurológica." },
 { keywords: ["granos", "espalda", "adolescente", "acne"], response: "👦 **Acné en espalda:** Es muy común en adolescentes por cambios hormonales. Usa un jabón con ácido salicílico, ducha después de sudar y evita ropa muy ajustada. Si hay quistes dolorosos, un dermatólogo puede recetar tratamiento." },
 { keywords: ["caen", "dientes", "leche", "niño", "edad"], response: "🦷 **Caída de dientes de leche:** Es normal que comiencen a caerse entre los 6 y 7 años, siguiendo generalmente el mismo orden en que salieron. Los primeros suelen ser los incisivos centrales inferiores." },
-// Dudas sobre Sentidos y Molestias Cotidianas
 { keywords: ["zumbido", "oido", "pito", "tinnitus"], response: "👂 **Zumbido en el oído (Tinnitus):** Puede ser por acumulación de cera, exposición a ruido fuerte, estrés o problemas de presión arterial. Si es persistente o solo en un oído, requiere evaluación por un otorrinolaringólogo." },
 { keywords: ["resecan", "labios", "parten", "agua"], response: "👄 **Labios resecos:** A pesar de tomar agua, puede deberse a respirar por la boca, deficiencia de vitaminas B o lamerse los labios (la saliva los reseca más). Usa un bálsamo labial con manteca de karité o vaselina pura." },
 { keywords: ["borroso", "computadora", "lentes", "fatiga", "vista"], response: "💻 **Vista borrosa por computadora:** Probablemente sea fatiga visual digital. Aplica la regla 20-20-20: cada 20 minutos, mira un objeto a 20 pies (6 metros) de distancia durante 20 segundos. Usa lágrimas artificiales si sientes sequedad." },
 { keywords: ["mal aliento", "mañanas", "cepillo", "dientes", "halitosis"], response: "👃 **Mal aliento matutino:** Es normal por la reducción de saliva en la noche. Mejora cepillando también la lengua, usando hilo dental antes de dormir y manteniéndote bien hidratado. Si persiste, podría ser problema gingival o gástrico." },
-// Mitos Urbanos y Dudas de Internet
 { keywords: ["baño", "agua fria", "sudor", "paralisis facial"], response: "❄️ **Mito del baño frío:** No, el agua fría después de sudar NO causa parálisis facial. La parálisis de Bell suele estar asociada a infecciones virales (como el herpes simple), no a la temperatura del agua." },
 { keywords: ["recalentar", "microondas", "plastico", "cancer"], response: "📦 **Plástico en microondas:** Calentar alimentos en plásticos no aptos para microondas puede liberar químicos como el BPA o ftalatos en la comida, que son disruptores endocrinos. Usa siempre recipientes de vidrio o cerámica." },
 { keywords: ["sandia", "papaya", "noches", "pesado", "daño"], response: "🍉 **Frutas de noche:** La sandía y la papaya no 'caen pesado' ni hacen daño por sí solas. Son fáciles de digerir. La sensación de pesadez suele deberse a comer una porción muy grande justo antes de acostarse, lo que puede causar reflujo." },
 { keywords: ["crujo", "dedos", "manos", "artritis", "viejo"], response: "👆 **Crujir los dedos:** No, crujirse los nudillos no causa artritis. El sonido es simplemente la liberación de burbujas de gas en el líquido sinovial de la articulación. Es inofensivo a menos que cause dolor." },
-// Salud Laboral y Ergonómica
 { keywords: ["sentado", "oficina", "espalda", "estiramientos", "silla"], response: "🪑 **Dolor de espalda en oficina:** Ajusta tu silla para que tus pies toquen el suelo y la pantalla esté a la altura de los ojos. Cada hora, levántate, estira los brazos hacia el techo y haz rotaciones suaves del torso." },
 { keywords: ["manos dormidas", "hormigueo", "muñeca", "mouse", "tunel carpiano"], response: "🖱️ **Hormigueo en muñeca:** Es un síntoma clásico del síndrome del túnel carpiano, causado por la compresión del nervio mediano. Usa un mouse ergonómico, una muñequera y haz pausas frecuentes. Si hay debilidad, consulta a un médico." },
 { keywords: ["cuello", "espalda", "agachado", "laptop", "postura"], response: "💻 **Dolor de cuello por laptop:** La postura de 'cabeza hacia adelante' multiplica la presión en el cuello. Intenta elevar la laptop con unos libros para que la pantalla quede a la altura de tus ojos y usa un teclado externo." },
 { keywords: ["levantarme", "escritorio", "hinchen", "piernas", "varices"], response: "🧍 **Prevención de varices:** Levántate al menos 5 minutos cada hora. Mientras estés sentado, haz círculos con los tobillos y estira las piernas. Evita cruzar las piernas por períodos prolongados." },
 { keywords: ["arde", "espalda", "omoplatos", "postura", "estres"], response: "🔥 **Ardor entre omóplatos:** Suele ser tensión muscular por mala postura (hombros enrollados hacia adelante) o estrés. Aplica calor local, masajea la zona con una pelota de tenis contra la pared y corrige tu postura al sentarte." },
-// Salud Visual y Fatiga Digital
 { keywords: ["ojos secos", "arena", "monitor", "gotitas", "lagrimas"], response: "💧 **Ojos secos por monitor:** Parpadeamos menos frente a las pantallas. Usa lágrimas artificiales sin conservantes. Las gotas de 'agua de mar' no son recomendables para uso frecuente sin indicación médica." },
 { keywords: ["lentes", "filtro", "luz azul", "pantallas", "sirven"], response: "👓 **Lentes de luz azul:** Pueden ayudar a reducir la fatiga visual y mejorar levemente el sueño si usas pantallas de noche, pero la evidencia científica sobre su protección a largo plazo es mixta. La regla 20-20-20 es más efectiva." },
 { keywords: ["enfocar", "lejos", "computadora", "vista", "desgastando"], response: "👁️ **Dificultad para enfocar de lejos:** Podría ser miopía o espasmo de acomodación por fatiga visual. Es recomendable una evaluación con un optómetra para descartar la necesidad de lentes." },
 { keywords: ["20-20-20", "descansar", "ojos", "trabajo", "regla"], response: "👀 **Regla 20-20-20:** Cada **20 minutos**, mira un objeto que esté a **20 pies** (aprox. 6 metros) de distancia, durante al menos **20 segundos**. Esto relaja el músculo que enfoca el ojo." },
 { keywords: ["celular", "luz apagada", "dormir", "cansa vista"], response: "📱 **Celular en la oscuridad:** No daña permanentemente la vista, pero causa fatiga visual severa, sequedad y la luz azul suprime la melatonina, dificultando conciliar el sueño. Usa el modo 'luz nocturna' o baja el brillo." },
-// Salud Dental y Bucal
 { keywords: ["sangran", "encias", "cepillo", "infeccion", "gingivitis"], response: "🩸 **Encías que sangran:** No es normal, incluso si no duele. Es el signo principal de gingivitis (inflamación por placa bacteriana). Mejora tu técnica de cepillado, usa hilo dental a diario y visita al dentista para una limpieza profesional." },
 { keywords: ["dolor punzante", "diente", "fria", "caliente", "sensible"], response: "🦷 **Dolor con frío/calor:** Indica que la dentina está expuesta o hay una caries profunda que está afectando el nervio. Evita extremos de temperatura y agenda una cita con el dentista lo antes posible." },
 { keywords: ["sarro", "placa", "amarillo", "dientes", "casa"], response: "🦷 **Placa vs. Sarro:** La placa es una película blanda que se quita cepillando. El sarro es placa endurecida que **solo un dentista puede quitar** con herramientas especiales. Los remedios caseros (como bicarbonato) son abrasivos y pueden dañar el esmalte." },
 { keywords: ["desinflamar", "encia", "muela del juicio", "cordal"], response: "🦷 **Muela del juicio inflamada:** Haz enjuagues con agua tibia y sal varias veces al día. Mantén la zona muy limpia. Si hay dolor severo, fiebre o dificultad para abrir la boca, necesitas evaluación dental urgente." },
 { keywords: ["hilo dental", "todos los dias", "cepillado", "enjuague"], response: "🦷 **Hilo dental:** Sí, es necesario usarlo al menos una vez al día (preferiblemente de noche). El cepillo no alcanza entre los dientes, que es donde frecuentemente inician las caries y la enfermedad de las encías." },
-// Remedios Caseros para Malestares Comunes
 { keywords: ["te", "jengibre", "limon", "miel", "tos", "garganta"], response: "🍵 **Té para la tos:** Hierve agua con rodajas de jengibre fresco por 10 min. Deja entibiar, añade jugo de medio limón y 1 cucharada de miel. La miel recubre la garganta y el jengibre es antiinflamatorio." },
 { keywords: ["insomnio", "infusion", "casera", "dormir rapido", "noches"], response: "🌙 **Infusión para dormir:** La mejor opción es té de valeriana, pasiflora (maracuyá) o manzanilla. Evita endulzar con mucha azúcar. Acompaña con un ambiente oscuro y fresco." },
 { keywords: ["nauseas", "dolor estomago", "casero", "pastillas"], response: "🤢 **Náuseas casero:** El té de jengibre es el más efectivo. También puedes oler un limón fresco o tomar pequeñas sorbos de agua con un poco de bicarbonato (si no tienes hipertensión)." },
 { keywords: ["suero", "casero", "hidratacion oral", "casa"], response: "💧 **Suero casero (OMS):** 1 litro de agua hervida o embotellada + 6 cucharaditas rasas de azúcar + 1/2 cucharadita rasa de sal. Mezcla bien. Es vital en casos de diarrea o vómitos." },
 { keywords: ["inflamacion", "golpe", "tobillo", "planta", "remedio"], response: "🦶 **Golpe en tobillo:** Aplica el protocolo RICE: Reposo, Hielo (15-20 min cada 2-3 horas), Compresión (venda elástica) y Elevación (por encima del nivel del corazón). El árnica en gel puede ayudar con la inflamación superficial." },
-// Cuidado de la Piel y Remedios Estéticos
 { keywords: ["mascarilla", "avena", "miel", "resequedad", "cara"], response: "🍯 **Mascarilla de avena y miel:** Mezcla 2 cdas de avena molida con 1 cda de miel y un poco de agua tibia hasta formar una pasta. Aplica por 15 min y enjuaga. Es excelente para calmar y hidratar la piel seca." },
 { keywords: ["cabello", "seco", "maltratado", "aceites", "plantas"], response: "💇 **Cabello seco:** El aceite de coco o de argán aplicados de medios a puntas 30 min antes del lavado son excelentes. Evita el agua muy caliente al lavar, ya que deshidrata más la hebra." },
 { keywords: ["bicarbonato", "limon", "axilas", "aclarar", "quemar"], response: "⚠️ **Bicarbonato y limón en axilas:** **No es seguro.** El limón es fotosensibilizante (puede causar quemaduras graves con el sol) y el bicarbonato altera el pH de la piel, causando irritación y oscurecimiento por inflamación. Usa desodorantes con ácidos suaves en su lugar." },
 { keywords: ["quemadura", "sol", "ardor", "receta casera"], response: "☀️ **Quemadura de sol:** Aplica compresas frías, gel de aloe vera puro (sin alcohol) o una loción con calamina. Mantente muy hidratado. Nunca aplastes las ampollas." },
 { keywords: ["ojeras", "oscuras", "hinchazon", "ojos", "remedio"], response: "👁️ **Ojeras e hinchazón:** Aplica compresas frías (como cucharas que estuvieron en el refrigerador) o rodajas de pepino por 10 min. Dormir con la cabeza ligeramente elevada ayuda a drenar el líquido." },
-// Seguridad y Mitos de Remedios Caseros
 { keywords: ["te de ruda", "embarazada", "presion alta"], response: "⚠️ **Té de ruda:** Está **contraindicado** en el embarazo (puede estimular contracciones uterinas) y en personas con hipertensión o problemas hepáticos. No lo consumas sin supervisión médica." },
 { keywords: ["ajo", "crudo", "ayunas", "infecciones"], response: "🧄 **Ajo crudo en ayunas:** Tiene propiedades antimicrobianas leves (alicina), pero **no cura todas las infecciones**. Puede causar ardor gástrico severo en personas con gastritis o reflujo. No sustituye a los antibióticos." },
 { keywords: ["fiebre", "hijo", "paños", "alcohol", "peligroso"], response: "🚫 **Alcohol en fiebre infantil:** Es **PELIGROSO**. El alcohol se absorbe a través de la piel y puede causar intoxicación etílica o hipoglucemia en niños. Usa solo paños de agua tibia y medicamentos recetados por el pediatra." },
 { keywords: ["manzanilla", "concentrado", "coagulacion", "medicamentos"], response: "🍵 **Manzanilla y coagulación:** En cantidades normales de té es segura, pero en concentrados o suplementos puede tener un efecto anticoagulante leve, potenciando el efecto de medicamentos como la warfarina o la aspirina." },
 { keywords: ["gotas", "agua de mar", "limon", "ojos", "infeccion"], response: "👁️ **Limón o agua de mar en ojos:** **Nunca** pongas limón en los ojos, causará una quemadura química dolorosa. El agua de mar no es estéril y puede contener bacterias. Usa solo suero fisiológico estéril o lágrimas artificiales." },
-// Combinaciones, Olvidos y Errores Comunes
 { keywords: ["olvide", "pastilla", "tarde", "juntas", "noche", "olvido"], response: "💊 **Olvido de pastilla:** Regla general: si falta poco para la siguiente dosis, salta la olvidada y toma la siguiente a su hora. **Nunca tomes dos dosis juntas** para compensar, a menos que tu médico o el prospecto lo indiquen específicamente." },
 { keywords: ["ibuprofeno", "refresco", "jugo", "naranja", "agua"], response: "💊 **Ibuprofeno con jugo:** Es mejor tomarlo con un vaso lleno de **agua** para proteger el estómago. Algunos jugos (como el de pomelo/toronja) pueden interferir con la absorción de ciertos medicamentos." },
 { keywords: ["tres pastillas", "dolor", "presion", "circulacion", "juntas"], response: "💊 **Múltiples pastillas:** Generalmente se pueden tomar juntas si fueron recetadas para el mismo horario, pero es ideal separarlas por 10-15 minutos con abundante agua para evitar irritación esofágica. Consulta a tu farmacéutico sobre interacciones específicas." },
 { keywords: ["equivoque", "pastilla dormir", "esposa", "vitamina", "error"], response: "💊 **Error de medicación:** Si fue una sola pastilla de sueño (ej. zolpidem o difenhidramina), lo más probable es que sientas mucho sueño, mareo o sequedad de boca. No conduzcas ni operes maquinaria. Si la persona es un niño o tomó una dosis masiva, llama a emergencias." },
 { keywords: ["partir", "mitad", "pastilla", "ranurada", "dosis"], response: "💊 **Partir pastillas:** Solo se deben partir las pastillas que tienen una línea (ranura) en el medio. Partir cápsulas o comprimidos de liberación prolongada puede liberar toda la dosis de golpe, causando una sobredosis peligrosa." },
-// Efectos Secundarios y Reacciones Fuertes
 { keywords: ["antibiotico", "boca amarga", "mareo", "alergico"], response: "🤢 **Efectos de antibióticos:** Sabor amargo y mareo leve pueden ser efectos secundarios comunes. Sin embargo, si aparece sarpullido, hinchazón de labios o dificultad para respirar, suspéndelo y busca atención médica (posible alergia)." },
 { keywords: ["sueño", "pesadez", "alergia", "pastilla"], response: "😴 **Antihistamínicos y sueño:** Muchos antihistamínicos de 'primera generación' (como la clorfeniramina o difenhidramina) cruzan la barrera hematoencefálica y causan somnolencia. Pregunta a tu médico por opciones de 'segunda generación' (como loratadina o cetirizina) que causan menos sueño." },
 { keywords: ["pastillas", "adelgazar", "internet", "corazon", "ansiedad"], response: "⚠️ **Pastillas para adelgazar de internet:** **Suspéndelas inmediatamente.** Los productos no regulados suelen contener estimulantes peligrosos (como sibutramina oculta) que causan taquicardia, ansiedad y riesgo cardiovascular. Consulta a un nutriólogo o endocrinólogo." },
 { keywords: ["pastillas", "dolor cabeza", "estreñir", "estomago"], response: "💊 **Analgésicos y estómago:** El ibuprofeno, naproxeno y la aspirina pueden causar gastritis, dolor de estómago y, a largo plazo, estreñimiento o úlceras. El paracetamol es más amigable con el estómago, pero no debe exceder la dosis por riesgo hepático." },
-// Alimentos, Alcohol e Interacciones
 { keywords: ["horas", "antibiotico", "cerveza", "daño"], response: "🍺 **Alcohol y antibióticos:** Se recomienda esperar al menos **48-72 horas** después de terminar el tratamiento. El alcohol puede reducir la efectividad del antibiótico y aumentar los efectos secundarios como náuseas y daño hepático." },
 { keywords: ["toronja", "pomelo", "colesterol", "cierto"], response: "🍊 **Toronja y medicamentos:** Es **cierto**. La toronja bloquea una enzima en el intestino que metaboliza muchos fármacos (como las estatinas para el colesterol y algunos para la presión), provocando que el medicamento se acumule en la sangre a niveles tóxicos." },
 { keywords: ["omeprazol", "gastritis", "ayunas", "desayunar"], response: "💊 **Omeprazol:** Debe tomarse estrictamente **en ayunas**, al menos 30-60 minutos antes del desayuno, para que pueda recubrir y proteger la mucosa gástrica de manera efectiva antes de que se produzca el ácido de la comida." },
 { keywords: ["calcio", "hierro", "tiroides", "absorcion"], response: "💊 **Interacciones:** El calcio y el hierro interfieren con la absorción de la levotiroxina (hormona tiroidea). Debes tomar la pastilla de la tiroides en ayunas y esperar al menos 4 horas antes de tomar suplementos de calcio o hierro." },
-// Conservación y Caducidad
 { keywords: ["vencio", "tres meses", "analgesicos", "muela", "veneno"], response: "💊 **Medicamentos vencidos:** No se vuelven 'veneno', pero pierden potencia y eficacia. En un dolor de muela severo, es mejor conseguir uno nuevo. Nunca tomes antibióticos vencidos, ya que pueden no combatir la infección y generar resistencia." },
 { keywords: ["arruinan", "pastillas", "carro", "sol", "calento"], response: "🚗 **Calor y medicamentos:** Sí, el calor extremo puede degradar los principios activos, haciendo que la pastilla sea menos efectiva o inestable. Guárdalos siempre en un lugar fresco y seco, nunca en la guantera del auto." },
-// Curiosidades del Cuerpo y Reacciones Raras
 { keywords: ["estornudar", "iluminado", "sol", "reflejo"], response: "🤧 **Estornudo por luz:** Es un rasgo genético inofensivo llamado 'reflejo estornutatorio fótico'. Ocurre en un 18-35% de la población cuando el nervio óptico (luz) estimula por error al nervio trigémino (estornudo)." },
 { keywords: ["palpito", "brinco", "corazon", "segundo"], response: "❤️ **Palpito o brinco en el corazón:** Suelen ser extrasístoles (latidos prematuros). Son muy comunes y generalmente benignos, causados por estrés, cafeína o falta de sueño. Si son frecuentes, van acompañados de mareo o dolor, consulta a un cardiólogo." },
 { keywords: ["piel de gallina", "cancion", "emocion"], response: "🎵 **Piel de gallina por emoción:** Se llama 'escalofrío estético'. La música o emociones intensas liberan dopamina, activando el sistema nervioso simpático, el mismo que nos eriza el vello ante el frío o el peligro." },
 { keywords: ["quedando dormido", "caigo", "vacío", "brinco", "cama"], response: "😴 **Brinco al dormir:** Se llama 'sacudida hipnagógica'. Es un espasmo muscular involuntario inofensivo que ocurre cuando el cerebro interpreta erróneamente la relajación muscular profunda como una señal de caída." },
 { keywords: ["dedos", "arrugan", "agua", "piscina"], response: "💧 **Dedos arrugados en agua:** No es por absorción de agua, sino una reacción del sistema nervioso para mejorar el agarre en superficies mojadas, un rasgo evolutivo de nuestros ancestros." },
-// Sueño, Sueños y Descanso
 { keywords: ["acuerdas", "soñaste", "descansaste"], response: "💭 **Recordar sueños:** Recordar los sueños no significa que descansaste mal. De hecho, ocurre cuando despiertas durante o justo después de la fase REM. Es normal y saludable." },
 { keywords: ["10 horas", "destruido", "5 horas", "energia"], response: "🛌 **Dormir mucho y cansarse:** Dormir en exceso (más de 9-10h) puede alterar tu ritmo circadiano y causar 'inercia del sueño', dejándote aturdido. La consistencia (mismas horas cada día) es más importante que la cantidad." },
 { keywords: ["paralisis", "sueño", "sube el muerto", "real"], response: "👻 **Parálisis del sueño:** Ocurre cuando tu mente despierta pero tu cuerpo sigue en la atonía muscular de la fase REM (para que no actúes tus sueños). No es peligroso ni sobrenatural. Regularizar el horario de sueño reduce su frecuencia." },
 { keywords: ["deja vu", "cerebro", "vivido", "momento"], response: "🧠 **Déjà vu:** Es un 'cortocircuito' inofensivo en el cerebro donde la memoria de corto plazo se procesa erróneamente como memoria de largo plazo, dándote la falsa sensación de que el momento ya ocurrió." },
-// Dudas del Día a Día y Alimentación
 { keywords: ["picante", "sudar", "nariz", "caliente"], response: "🌶️ **Comida picante:** La capsaicina del chile engaña a los receptores de calor de tu cuerpo, haciéndole creer que se está sobrecalentando. Como respuesta, sudas y segregas moco nasal para enfriarte." },
 { keywords: ["pesadez", "sueño", "almorzar", "mal del puerco"], response: "🍖 **Mal del puerco (Somnolencia postprandial):** Al comer mucho, especialmente carbohidratos, la sangre se dirige al sistema digestivo y se liberan hormonas como la insulina y la melatonina, induciendo el sueño. Comidas más ligeras lo evitan." },
 { keywords: ["congele", "cerebro", "frio", "helado", "rapido"], response: "🧊 **Congelación cerebral:** Es una cefalea por estímulo frío. Al comer algo muy frío, los vasos sanguíneos del paladar se contraen y dilatan rápidamente, enviando una señal de dolor al cerebro a través del nervio trigémino. Se pasa en segundos." },
 { keywords: ["cafe", "activa", "sueño", "nada"], response: "☕ **Cafeína variable:** La genética determina la velocidad con la que tu hígado (enzima CYP1A2) metaboliza la cafeína. Los 'metabolizadores rápidos' no sienten el efecto o incluso les relaja, mientras que los 'lentos' sufren ansiedad e insomnio." },
-// Hábitos, Cuerpo y Mitos Ligeros
 { keywords: ["aguantarse", "orinar", "tiempo", "incomodo"], response: "🚽 **Aguantar la orina:** Hacerlo ocasionalmente no es grave, pero hacerlo frecuentemente puede debilitar los músculos del suelo pélvico, aumentar el riesgo de infecciones urinarias y, a largo plazo, afectar la función renal." },
 { keywords: ["hipo", "quita", "mitos"], response: "🫁 **Quitar el hipo:** Las formas más efectivas científicamente son: contener la respiración por 10-20 segundos, beber un vaso de agua helada a pequeños sorbos, o que alguien te asuste (el sobresalto resetea el nervio frénico)." },
 { keywords: ["cabello", "uñas", "crecen", "fallece"], response: "💀 **Mito del crecimiento post-mortem:** No, el cabello y las uñas NO crecen después de la muerte. Lo que ocurre es que la piel se deshidrata y se retrae, haciendo que las uñas y el vello parezcan más largos." },
 { keywords: ["golpe", "codo", "corrientazo", "dedos"], response: "⚡ **Corrientazo en el codo:** No golpeas el hueso, sino el 'nervio cubital', que pasa muy cerca de la superficie en el codo (el 'hueso de la risa'). Al presionarlo, envía una señal eléctrica a los dedos meñique y anular." },
-// Preguntas Personales Adicionales
 { keywords: ["duele", "pecho", "corazon", "opresion", "me duele el pecho"], response: "🚨 **DOLOR DE PECHO:** Si el dolor es opresivo, se irradia al brazo izquierdo, mandíbula o espalda, o se acompaña de falta de aire y sudoración, **BUSCA ATENCIÓN MÉDICA DE EMERGENCIA INMEDIATA**. No ignores estos síntomas." }
 ];
 
-// =========================================================================
-// TIEMPO Y ZONA HORARIA RD (CORREGIDO)
-// =========================================================================
 function getRDDate() { return new Date().toLocaleString('en-US', { timeZone: 'America/Santo_Domingo' }); }
 function getRDDateISO() { return new Date().toLocaleString('en-CA', { timeZone: 'America/Santo_Domingo', year: 'numeric', month: '2-digit', day: '2-digit' }); }
 function getRDHour() { return parseInt(new Date().toLocaleString('en-US', { timeZone: 'America/Santo_Domingo', hour: 'numeric', hour12: false }), 10); }
@@ -725,6 +795,20 @@ var kbData = await supabase.from('knowledge_base').select('*');
 knowledgeBase = kbData.data || [];
 var learnedData = await supabase.from('ai_learned_responses').select('*');
 learnedResponses = learnedData.data || [];
+updateIntelligenceBadge();
+}
+
+// 🧠 MEJORA: Badge ahora suma ambos tipos de conocimiento
+function updateIntelligenceBadge() {
+var badge = document.getElementById('intelligenceBadge');
+if (!badge) return;
+var count = learnedResponses.length + knowledgeBase.length;
+if (count > 0) {
+badge.classList.remove('hidden');
+badge.innerText = count > 99 ? '99+' : count;
+} else {
+badge.classList.add('hidden');
+}
 }
 
 supabase.auth.onAuthStateChange(async (event, session) => {
@@ -994,9 +1078,6 @@ chatState.active = false;
 }
 }
 
-// =========================================================================
-// MOTOR DE BÚSQUEDA INTELIGENTE (UMBRAL MEJORADO)
-// =========================================================================
 function findBestMatch(query) {
 const cleanQuery = cleanText(query);
 if (!cleanQuery) return null;
@@ -1019,16 +1100,12 @@ score += 1;
 if (item.keywords.some(k => cleanText(k) === cleanQuery)) { score += 5; phraseHit = true; }
 if (score > highestScore) { highestScore = score; bestMatch = item; }
 }
-// Umbral: frase completa, o 2+ coincidencias, o pregunta de una sola palabra con 1 coincidencia
 if (bestMatch && (phraseHit || highestScore >= 2 || (queryWords.length === 1 && highestScore >= 1))) {
 return typeof bestMatch.response === 'function' ? bestMatch.response({ hour: getRDHour(), cals: userData.calories || 0 }) : bestMatch.response;
 }
 return null;
 }
 
-// =========================================================================
-// FUNCIÓN PRINCIPAL DE MENSAJERÍA (ORDEN CORRECTO + TRIAJE + CONVERSACIONAL)
-// =========================================================================
 async function sendMessage() {
 var input = document.getElementById('chatInput');
 var rawText = input.value.trim();
@@ -1048,10 +1125,8 @@ if (indicator) indicator.remove();
 
 var cleanQuery = cleanText(rawText);
 
-// 0. Flujo de triaje activo
 if (chatState.active) { processHealthFlow(rawText); return; }
 
-// 1. Respuestas aprendidas por el admin (búsqueda flexible sin comillas/tildes)
 var learnedAnswer = null;
 for (var qa of learnedResponses) {
 var cleanKeyword = cleanText(qa.question_keyword);
@@ -1062,11 +1137,9 @@ learnedAnswer = qa; break;
 }
 if (learnedAnswer) { addChatMessage("ia", `💡 **Respuesta aprendida:**\n\n${learnedAnswer.ai_answer}`); return; }
 
-// 2. Motor de intenciones (TODAS las preguntas catalogadas)
 var smartResponse = findBestMatch(rawText);
 if (smartResponse) { addChatMessage("ia", smartResponse); return; }
 
-// 3. Respuestas conversacionales básicas (evitan saturar la cola de pendientes)
 if (/^(hola|hey|saludos|buenos dias|buenas tardes|buenas noches|buenas|que tal)/.test(cleanQuery)) {
 addChatMessage("ia", `¡Hola ${userData.name}! 👋 Hoy llevas ${userData.calories || 0} kcal y ${userData.water_intake || 0}/8 vasos de agua. ¿En qué te ayudo?`);
 return;
@@ -1092,14 +1165,12 @@ addChatMessage("ia", `😴 Tu último registro de sueño es de ${userData.sleep_
 return;
 }
 
-// 4. Triaje de síntomas no catalogados
 if (/(dolor|sintoma|me siento|me duele|enfermo|malestar|fiebre|nausea|vomito|mareo)/.test(cleanQuery)) {
 chatState.active = true; chatState.step = 1; chatState.data = {};
 addChatMessage("ia", "Lamento que te sientas mal. ¿Hace cuánto comenzó este malestar y qué otro síntoma lo acompaña?");
 return;
 }
 
-// 5. Base de conocimientos (PDF/Excel subidos por el admin)
 var searchResults = searchInKnowledgeBase(rawText);
 if (searchResults.length > 0 && searchResults[0].score >= 5) {
 var bestResult = searchResults[0];
@@ -1108,14 +1179,10 @@ addChatMessage("ia", `📚 **Encontré información relevante:**\n📌 *Fuente:*
 return;
 }
 
-// 6. Fallback -> cola de entrenamiento del admin
-addChatMessage("ia", `🤔 Comprendo, Buscare informacion con el admin para brindarte una respuesta Justa, pero puedo ayudarte si me describes un **síntoma**, Oh si te sientes mal para ayudarte**.`);
+addChatMessage("ia", `🤔 Comprendo, Buscaré información con el admin para brindarte una respuesta justa, pero puedo ayudarte si me describes un **síntoma**, o si te sientes mal.`);
 await supabase.from('pending_ai_questions').insert({ user_id: currentUser.id, user_question: rawText });
 }
 
-// =========================================================================
-// ENTRENAMIENTO (ADMIN)
-// =========================================================================
 async function loadPendingQuestions() {
 var listContainer = document.getElementById('pendingQuestionsList');
 listContainer.innerHTML = '<p class="text-center text-slate-500 py-4">Cargando...</p>';
@@ -1157,6 +1224,304 @@ alert("✅ ¡IA Entrenada con éxito!");
 await loadKnowledgeBase(); loadPendingQuestions();
 } catch (e) { alert("❌ Error al guardar: " + e.message); }
 finally { btn.disabled = false; btn.innerHTML = originalBtnText; }
+}
+
+// =========================================================================
+// 🧠 PANEL DE INTELIGENCIA MEJORADO (CON TABS)
+// =========================================================================
+
+// Función para cambiar entre pestañas
+function switchIntelligenceTab(tab) {
+var tabLearned = document.getElementById('tabLearned');
+var tabKB = document.getElementById('tabKB');
+var learnedContent = document.getElementById('learnedTabContent');
+var kbContent = document.getElementById('kbTabContent');
+
+if (tab === 'learned') {
+tabLearned.classList.add('active');
+tabKB.classList.remove('active');
+learnedContent.classList.remove('hidden');
+kbContent.classList.add('hidden');
+renderIntelligenceList();
+} else {
+tabLearned.classList.remove('active');
+tabKB.classList.add('active');
+learnedContent.classList.add('hidden');
+kbContent.classList.remove('hidden');
+renderKnowledgeBaseList();
+}
+}
+
+async function openIntelligenceModal() {
+document.getElementById('intelligenceModal').classList.remove('hidden');
+// Por defecto mostrar la pestaña de respuestas aprendidas
+switchIntelligenceTab('learned');
+}
+
+function closeIntelligenceModal() {
+document.getElementById('intelligenceModal').classList.add('hidden');
+}
+
+// TAB 1: Renderizar respuestas aprendidas
+async function renderIntelligenceList() {
+var listContainer = document.getElementById('intelligenceList');
+listContainer.innerHTML = '<p class="text-center text-slate-400 py-8">Cargando memoria de la IA...</p>';
+try {
+var res = await supabase.from('ai_learned_responses').select('*').order('created_at', { ascending: false });
+if (res.error) throw res.error;
+learnedResponses = res.data || [];
+updateIntelligenceBadge();
+document.getElementById('learnedCount').innerText = learnedResponses.length;
+document.getElementById('intelligenceCount').innerText = learnedResponses.length + knowledgeBase.length;
+
+if (learnedResponses.length === 0) {
+listContainer.innerHTML = `<div class="text-center py-12">
+<div class="text-6xl mb-4">💡</div>
+<p class="text-slate-500 text-lg">La IA aún no ha aprendido respuestas personalizadas.</p>
+<p class="text-slate-400 text-sm mt-2">Enseña respuestas desde la sección "Entrenar IA" cuando aparezcan preguntas pendientes.</p>
+</div>`;
+return;
+}
+
+listContainer.innerHTML = learnedResponses.map(item => {
+var date = new Date(item.created_at).toLocaleDateString('es-DO');
+return `
+<div class="intelligence-item bg-white p-4 rounded-lg border border-purple-200 shadow-sm hover:shadow-md transition" data-keyword="${item.question_keyword.toLowerCase()}" data-answer="${item.ai_answer.toLowerCase()}">
+<div class="flex justify-between items-start gap-3">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded">🔑 Palabra Clave</span>
+<span class="text-xs text-slate-500">${date}</span>
+</div>
+<p class="font-semibold text-slate-800 text-lg mb-2">"${item.question_keyword}"</p>
+<div class="bg-slate-50 p-3 rounded border-l-4 border-purple-400">
+<p class="text-sm text-slate-700 whitespace-pre-wrap">${item.ai_answer}</p>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<button onclick="openEditIntelligenceModal('${item.id}', '${item.question_keyword.replace(/'/g, "\\'")}', \`${item.ai_answer.replace(/`/g, "'")}\`)" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 transition">✏️ Editar</button>
+<button onclick="deleteIntelligenceResponse('${item.id}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 transition">🗑️ Eliminar</button>
+</div>
+</div>
+</div>`;
+}).join('');
+} catch (e) {
+listContainer.innerHTML = `<p class="text-red-600 text-center py-4">❌ Error: ${e.message}</p>`;
+}
+}
+
+function filterIntelligenceList() {
+var searchTerm = document.getElementById('intelligenceSearch').value.toLowerCase().trim();
+var items = document.querySelectorAll('.intelligence-item');
+var visibleCount = 0;
+items.forEach(item => {
+var keyword = item.getAttribute('data-keyword') || '';
+var answer = item.getAttribute('data-answer') || '';
+if (keyword.includes(searchTerm) || answer.includes(searchTerm)) {
+item.style.display = '';
+visibleCount++;
+} else {
+item.style.display = 'none';
+}
+});
+var existingMsg = document.getElementById('noResultsMsg');
+if (existingMsg) existingMsg.remove();
+if (visibleCount === 0 && searchTerm) {
+var msg = document.createElement('div');
+msg.id = 'noResultsMsg';
+msg.className = 'text-center py-8 text-slate-500';
+msg.innerHTML = `<p class="text-lg">🔍 No se encontraron resultados para "${searchTerm}"</p>`;
+document.getElementById('intelligenceList').appendChild(msg);
+}
+}
+
+function openEditIntelligenceModal(id, keyword, answer) {
+document.getElementById('editIntelligenceId').value = id;
+document.getElementById('editIntelligenceKeyword').value = keyword;
+document.getElementById('editIntelligenceAnswer').value = answer;
+document.getElementById('editIntelligenceModal').classList.remove('hidden');
+}
+
+function closeEditIntelligenceModal() {
+document.getElementById('editIntelligenceModal').classList.add('hidden');
+}
+
+async function saveIntelligenceEdit() {
+var id = document.getElementById('editIntelligenceId').value;
+var keyword = document.getElementById('editIntelligenceKeyword').value.trim();
+var answer = document.getElementById('editIntelligenceAnswer').value.trim();
+if (!keyword || !answer) return alert("⚠️ Ambos campos son obligatorios.");
+var btn = document.getElementById('btnSaveIntelligenceEdit');
+var originalText = btn.innerHTML;
+btn.disabled = true; btn.innerHTML = '⟳ Guardando...';
+try {
+var cleanKeyword = cleanText(keyword);
+var res = await supabase.from('ai_learned_responses').update({
+question_keyword: cleanKeyword,
+ai_answer: answer
+}).eq('id', id);
+if (res.error) throw res.error;
+alert("✅ ¡Respuesta actualizada con éxito!");
+closeEditIntelligenceModal();
+await renderIntelligenceList();
+await loadKnowledgeBase();
+} catch (e) {
+alert("❌ Error al guardar: " + e.message);
+} finally {
+btn.disabled = false; btn.innerHTML = originalText;
+}
+}
+
+async function deleteIntelligenceResponse(id) {
+if (!confirm("⚠️ ¿Estás seguro de eliminar esta respuesta aprendida? La IA dejará de responder a esta palabra clave.")) return;
+try {
+var res = await supabase.from('ai_learned_responses').delete().eq('id', id);
+if (res.error) throw res.error;
+alert("✅ Respuesta eliminada correctamente.");
+await renderIntelligenceList();
+await loadKnowledgeBase();
+} catch (e) {
+alert("❌ Error al eliminar: " + e.message);
+}
+}
+
+// 🧠 NUEVO - TAB 2: Renderizar Base de Conocimiento (PDFs/Excel)
+async function renderKnowledgeBaseList() {
+var listContainer = document.getElementById('knowledgeBaseList');
+listContainer.innerHTML = '<p class="text-center text-slate-400 py-8">Cargando base de conocimiento...</p>';
+try {
+var res = await supabase.from('knowledge_base').select('*').order('created_at', { ascending: false });
+if (res.error) throw res.error;
+knowledgeBase = res.data || [];
+updateIntelligenceBadge();
+document.getElementById('kbCount').innerText = knowledgeBase.length;
+document.getElementById('intelligenceCount').innerText = learnedResponses.length + knowledgeBase.length;
+
+if (knowledgeBase.length === 0) {
+listContainer.innerHTML = `<div class="text-center py-12">
+<div class="text-6xl mb-4">📚</div>
+<p class="text-slate-500 text-lg">Aún no has importado documentos.</p>
+<p class="text-slate-400 text-sm mt-2">Sube PDFs o Excel desde la sección "Alimentar la IA con Datos Nutricionales".</p>
+</div>`;
+return;
+}
+
+listContainer.innerHTML = knowledgeBase.map(item => {
+var date = new Date(item.created_at).toLocaleDateString('es-DO');
+var contentPreview = (item.content || '').substring(0, 300);
+var tags = (item.tags || '').split(',').map(t => t.trim()).filter(t => t).slice(0, 5);
+return `
+<div class="kb-item bg-white p-4 rounded-lg border border-indigo-200 shadow-sm hover:shadow-md transition" data-title="${(item.title || '').toLowerCase()}" data-tags="${(item.tags || '').toLowerCase()}" data-content="${(item.content || '').toLowerCase().substring(0, 500)}">
+<div class="flex justify-between items-start gap-3">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2 flex-wrap">
+<span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded">📄 Documento</span>
+<span class="text-xs text-slate-500">${date}</span>
+<span class="text-xs text-slate-400">• ${item.content ? item.content.length : 0} caracteres</span>
+</div>
+<p class="font-semibold text-slate-800 text-lg mb-2">${item.title || 'Sin título'}</p>
+<div class="flex flex-wrap gap-1 mb-3">
+${tags.length > 0 ? tags.map(tag => `<span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full border border-slate-200">#${tag}</span>`).join('') : '<span class="text-xs text-slate-400 italic">Sin etiquetas</span>'}
+</div>
+<div class="kb-content-preview">${contentPreview}${item.content && item.content.length > 300 ? '...' : ''}</div>
+</div>
+<div class="flex flex-col gap-2">
+<button onclick="viewKBContent('${item.id}')" class="bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-200 transition">👁️ Ver</button>
+<button onclick="openEditKBModal('${item.id}')" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 transition">✏️ Editar</button>
+<button onclick="deleteKBItem('${item.id}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 transition">🗑️ Eliminar</button>
+</div>
+</div>
+</div>`;
+}).join('');
+} catch (e) {
+listContainer.innerHTML = `<p class="text-red-600 text-center py-4">❌ Error: ${e.message}</p>`;
+}
+}
+
+function filterKBList() {
+var searchTerm = document.getElementById('kbSearch').value.toLowerCase().trim();
+var items = document.querySelectorAll('.kb-item');
+var visibleCount = 0;
+items.forEach(item => {
+var title = item.getAttribute('data-title') || '';
+var tags = item.getAttribute('data-tags') || '';
+var content = item.getAttribute('data-content') || '';
+if (title.includes(searchTerm) || tags.includes(searchTerm) || content.includes(searchTerm)) {
+item.style.display = '';
+visibleCount++;
+} else {
+item.style.display = 'none';
+}
+});
+var existingMsg = document.getElementById('noKBResultsMsg');
+if (existingMsg) existingMsg.remove();
+if (visibleCount === 0 && searchTerm) {
+var msg = document.createElement('div');
+msg.id = 'noKBResultsMsg';
+msg.className = 'text-center py-8 text-slate-500';
+msg.innerHTML = `<p class="text-lg">🔍 No se encontraron documentos para "${searchTerm}"</p>`;
+document.getElementById('knowledgeBaseList').appendChild(msg);
+}
+}
+
+function viewKBContent(id) {
+var item = knowledgeBase.find(k => k.id == id);
+if (!item) return;
+alert(`📄 ${item.title}\n\n🏷️ Etiquetas: ${item.tags || 'Ninguna'}\n\n📝 Contenido (${item.content ? item.content.length : 0} caracteres):\n\n${item.content || 'Sin contenido'}`);
+}
+
+function openEditKBModal(id) {
+var item = knowledgeBase.find(k => k.id == id);
+if (!item) return;
+document.getElementById('editKBId').value = id;
+document.getElementById('editKBTitle').value = item.title || '';
+document.getElementById('editKBTags').value = item.tags || '';
+document.getElementById('editKBContent').value = item.content || '';
+document.getElementById('editKBModal').classList.remove('hidden');
+}
+
+function closeEditKBModal() {
+document.getElementById('editKBModal').classList.add('hidden');
+}
+
+async function saveKBEdit() {
+var id = document.getElementById('editKBId').value;
+var title = document.getElementById('editKBTitle').value.trim();
+var tags = document.getElementById('editKBTags').value.trim();
+var content = document.getElementById('editKBContent').value.trim();
+if (!title) return alert("⚠️ El título es obligatorio.");
+var btn = document.getElementById('btnSaveKBEdit');
+var originalText = btn.innerHTML;
+btn.disabled = true; btn.innerHTML = '⟳ Guardando...';
+try {
+var res = await supabase.from('knowledge_base').update({
+title: title,
+tags: tags,
+content: content
+}).eq('id', id);
+if (res.error) throw res.error;
+alert("✅ ¡Documento actualizado con éxito!");
+closeEditKBModal();
+await renderKnowledgeBaseList();
+await loadKnowledgeBase();
+} catch (e) {
+alert("❌ Error al guardar: " + e.message);
+} finally {
+btn.disabled = false; btn.innerHTML = originalText;
+}
+}
+
+async function deleteKBItem(id) {
+if (!confirm("⚠️ ¿Estás seguro de eliminar este documento de la base de conocimiento? La IA ya no podrá consultar su contenido.")) return;
+try {
+var res = await supabase.from('knowledge_base').delete().eq('id', id);
+if (res.error) throw res.error;
+alert("✅ Documento eliminado correctamente.");
+await renderKnowledgeBaseList();
+await loadKnowledgeBase();
+} catch (e) {
+alert("❌ Error al eliminar: " + e.message);
+}
 }
 
 // =========================================================================
